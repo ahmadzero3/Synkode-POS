@@ -29,12 +29,42 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        
-        //return redirect()->intended(RouteServiceProvider::HOME);
+
+        $user = Auth::user();
+        $redirectUrl = RouteServiceProvider::HOME;
+
+        if ($user) {
+            $isCashier = false;
+
+            if (isset($user->role) && isset($user->role->name)) {
+                $roleName = strtolower($user->role->name);
+                if ($roleName === 'cashier') {
+                    $isCashier = true;
+                }
+            }
+
+            if (!$isCashier && property_exists($user, 'role_name')) {
+                $roleName = strtolower($user->role_name ?? '');
+                if ($roleName === 'cashier') {
+                    $isCashier = true;
+                }
+            }
+
+            if (!$isCashier && isset($user->role_id)) {
+                if ((int)$user->role_id === 3) {
+                    $isCashier = true;
+                }
+            }
+
+            if ($isCashier) {
+                $redirectUrl = '/pos';
+            }
+        }
 
         return response()->json([
             'status' => true,
             'message' => __('user.login_success'),
+            'redirect_url' => $redirectUrl,
         ]);
     }
 

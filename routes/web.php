@@ -15,6 +15,7 @@ use App\Http\Controllers\AssignedJobController;
 use App\Http\Controllers\Party\PartyController;
 use App\Http\Controllers\Party\PartyTransactionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\UserPermissionsGroupController;
@@ -67,9 +68,11 @@ use App\Http\Controllers\Reports\ProfitReportController;
 use App\Http\Controllers\Reports\CustomerReportController;
 use App\Http\Controllers\Reports\SupplierReportController;
 use App\Http\Controllers\Reports\StockReportController;
+use App\Http\Controllers\Reports\StockAdjustmentReportController;
 
 use App\Http\Controllers\Sale\SaleOrderController;
 use App\Http\Controllers\Sale\SaleController;
+use App\Http\Controllers\Sale\PosPendingController;
 
 use App\Http\Controllers\Sale\SaleReturnController;
 
@@ -77,12 +80,15 @@ use App\Http\Controllers\Payment\SaleOrderPaymentController;
 use App\Http\Controllers\Payment\SalePaymentController;
 use App\Http\Controllers\Payment\SaleReturnPaymentController;
 use App\Http\Controllers\Sale\QuotationController;
+use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\Transaction\CashController;
 use App\Http\Controllers\Transaction\ChequeController;
 use App\Http\Controllers\Transaction\BankController;
 use App\Http\Controllers\Transaction\CloseCashController;
-use App\Models\Sale\SaleOrder;
-
+use App\Http\Controllers\SessionController;
+use App\Http\Controllers\AppLogController;
+use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\LicenseController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -94,8 +100,34 @@ use App\Models\Sale\SaleOrder;
 |
 */
 
+Route::get('/license', [LicenseController::class, 'show'])->name('license.show');
+Route::post('/license/verify', [LicenseController::class, 'verify'])->name('license.verify');
+
 Route::get('/', function () {
-    return redirect('/login');
+    // STRICT license check - redirect if any license component is missing
+    $envHasLicense = env('LICENSE_KEY_ACTIVATION') === 'true' &&
+        env('LICENSE_KEY') === 'true' &&
+        env('LICENSE_STATUS') === 'active' &&
+        !empty(env('LICENSE_CODE'));
+
+    $projectFile = storage_path('app/license_status.txt');
+    $publicFile = 'C:\\Users\\Public\\Documents\\license_status.txt';
+
+    $projectOk = file_exists($projectFile) && strpos(file_get_contents($projectFile), 'status=active') !== false;
+    $publicOk = file_exists($publicFile) && @strpos(@file_get_contents($publicFile), 'status=active') !== false;
+
+    // Only proceed if license is properly activated in env AND at least one file is active
+    if ($envHasLicense && ($projectOk || $publicOk)) {
+        // Check if user is authenticated to redirect appropriately
+        if (auth()->check()) {
+            return redirect('/dashboard');
+        } else {
+            return redirect('/login');
+        }
+    }
+
+    // If license is not properly set up, redirect to activation
+    return redirect()->route('license.show');
 });
 
 if (config('demo.enabled')) {
@@ -104,8 +136,6 @@ if (config('demo.enabled')) {
 
 
 Route::get('/migrate/db', [AppSettingsController::class, 'migrate'])->name('migrate');
-
-
 
 Route::get('/noimage', function () {
     //If image doesn't exist, show empty image
@@ -123,9 +153,11 @@ Route::get('/fevicon/{image_name?}', function ($image_name = null) {
 
 Route::get('/app/getimage/{image_name?}', function ($image_name = null) {
     $imagePath = 'public/images/app-logo/' . $image_name;
+
     if ($image_name == null || !Storage::exists($imagePath)) {
-        return redirect('noimage');
+        $imagePath = 'public/images/app-logo/default-colored-logo.png';
     }
+
     return response()->file(Storage::path($imagePath));
 });
 
@@ -135,7 +167,7 @@ Route::get('/language/switch/{id}', [LanguageController::class, 'switchLanguage'
 Route::get('/theme/switch/{theme_name}', [LanguageController::class, 'switchTheme'])
     ->name('theme.switch');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['web', 'auth', 'timed.session'])->group(function () {
     Route::post('/sale/invoice/update-status', [App\Http\Controllers\Sale\SaleController::class, 'updateInvoiceStatus'])->name('sale.invoice.updateStatus');
     Route::post('/sale/invoice/delete', [App\Http\Controllers\Sale\SaleController::class, 'delete'])->name('sale.invoice.delete');
     Route::get('/sale/invoice/customer-display', function () {
@@ -145,6 +177,8 @@ Route::middleware('auth')->group(function () {
      * Dashboard
      * */
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/dashboard/refresh', [DashboardController::class, 'refreshData'])->name('dashboard.refresh');
     /**
      * Settings
      */
@@ -161,8 +195,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/app/clear-log', [AppSettingsController::class, 'clearAppLog'])->name('clear.app.log');
 
         /*
-        * SMS API Settings
-        */
+         * SMS API Settings
+         */
         /*Route::get('/sms/send', [SmsController::class, 'send'])->name('sms.send');
         Route::get('/sms/twilio', [SmsController::class, 'twilio'])->name('sms.twilio');
         Route::get('/sms/vonage', [SmsController::class, 'vonage'])->name('sms.vonage');
@@ -339,6 +373,29 @@ Route::middleware('auth')->group(function () {
             ->name('customer.delete'); //delete operation
     });
 
+    // Register Routes
+    Route::group(['prefix' => 'register'], function () {
+        Route::get('/create', [RegisterController::class, 'create'])
+            ->middleware('can:register.create')
+            ->name('register.create');
+        Route::get('/edit/{id}', [RegisterController::class, 'edit'])
+            ->middleware('can:register.edit')
+            ->name('register.edit');
+        Route::put('/update', [RegisterController::class, 'update'])->name('register.update');
+        Route::get('/list', [RegisterController::class, 'list'])
+            ->middleware('can:register.view')
+            ->name('register.list');
+        Route::get('/datatable-list', [RegisterController::class, 'datatableList'])->name('register.datatable.list');
+        Route::post('/store', [RegisterController::class, 'store'])->name('register.store');
+        Route::post('/delete/', [RegisterController::class, 'delete'])
+            ->middleware('can:register.delete')
+            ->name('register.delete');
+
+        Route::get('/ajax/get-list', [RegisterController::class, 'ajaxList'])->name('register.ajax.index');
+
+        Route::get('/user/ajax/cashiers', [UserController::class, 'ajaxCashiers']);
+    });
+
     /**
      * Order
      * */
@@ -493,6 +550,38 @@ Route::middleware('auth')->group(function () {
     });
 
     /**
+     * Stock Adjustment
+     * */
+    Route::group(['prefix' => 'stock-adjustment'], function () {
+        Route::get('/create', [StockAdjustmentController::class, 'create'])
+            ->middleware('can:stock_adjustment.create')
+            ->name('stock_adjustment.create'); //View
+        Route::get('/details/{id}', [StockAdjustmentController::class, 'details'])
+            ->middleware('can:stock_adjustment.view')
+            ->name('stock_adjustment.details');
+        Route::get('/edit/{id}', [StockAdjustmentController::class, 'edit'])
+            ->middleware('can:stock_adjustment.edit')
+            ->name('stock_adjustment.edit'); //Edit
+        Route::put('/update', [StockAdjustmentController::class, 'store'])->name('stock_adjustment.update'); //Update
+        Route::get('/list', [StockAdjustmentController::class, 'list'])
+            ->middleware('can:stock_adjustment.view')
+            ->name('stock_adjustment.list'); //List
+        Route::get('/datatable-list', [StockAdjustmentController::class, 'datatableList'])->name('stock_adjustment.datatable.list'); //Datatable List
+        Route::post('/store', [StockAdjustmentController::class, 'store'])->name('stock_adjustment.store'); //Save operation
+        Route::post('/delete/', [StockAdjustmentController::class, 'delete'])
+            ->middleware('can:stock_adjustment.delete')
+            ->name('stock_adjustment.delete'); //delete operation
+
+        Route::get('/print/{id}', [StockAdjustmentController::class, 'print'])
+            ->middleware('can:stock_adjustment.view')
+            ->name('stock_adjustment.print');
+
+        Route::get('/pdf/{id}', [StockAdjustmentController::class, 'generatePdf'])
+            ->middleware('can:stock_adjustment.view')
+            ->name('stock_adjustment.pdf');
+    });
+
+    /**
      * Customization
      */
     Route::group(['prefix' => 'customize'], function () {
@@ -503,7 +592,49 @@ Route::middleware('auth')->group(function () {
         Route::put('/update', [CustomizationController::class, 'update'])
             ->middleware('can:customize.edit')
             ->name('customize.update');
+
+        Route::delete('/image/delete', [CustomizationController::class, 'deleteImage'])
+            ->middleware('can:customize.edit')
+            ->name('customize.image.delete');
     });
+
+    Route::get('/api/customization/images', [CustomizationController::class, 'getCustomerDisplayImages'])
+        ->name('api.customization.images');
+
+    /**
+     * Application Logs
+     * */
+    Route::group(['prefix' => 'app-log'], function () {
+        Route::get('/list', [AppLogController::class, 'list'])
+            ->middleware('can:app.log.view')
+            ->name('app.log.list');
+
+        Route::get('/datatable-list', [AppLogController::class, 'datatableList'])
+            ->middleware('can:app.log.view')
+            ->name('app.log.datatable.list');
+
+        Route::get('/{id}', [AppLogController::class, 'show'])
+            ->middleware('can:app.log.view')
+            ->name('app.log.show');
+
+        Route::post('/delete', [AppLogController::class, 'delete'])
+            ->middleware('can:app.log.view')
+            ->name('app.log.delete');
+
+        Route::post('/clear-all', [AppLogController::class, 'clearAll'])
+            ->middleware('can:app.log.clear_all')
+            ->name('app.log.clear.all');
+    });
+
+    Route::middleware(['auth', 'permission:database.backup.view'])->group(function () {
+        Route::get('/database-backup/list', [DatabaseBackupController::class, 'list'])->name('database.backup.list');
+        Route::post('/database-backup/create', [DatabaseBackupController::class, 'createBackup'])->name('database.backup.create');
+        Route::get('/database-backup/download/{filename}', [DatabaseBackupController::class, 'downloadBackup'])->name('database.backup.download');
+        Route::post('/database-backup/delete', [DatabaseBackupController::class, 'deleteBackup'])->name('database.backup.delete');
+    });
+
+    Route::get('/database-backup/datatable-list', [DatabaseBackupController::class, 'datatableList'])->name('database.backup.datatable.list');
+
 
     /**
      * Languages
@@ -638,6 +769,19 @@ Route::middleware('auth')->group(function () {
             return response()->file($imagePath);
         });
     });
+
+    // Session routes
+    Route::group(['prefix' => 'session', 'middleware' => ['auth', 'can:session.view']], function () {
+        Route::get('/list', [SessionController::class, 'list'])->name('session.list');
+        Route::get('/create', [SessionController::class, 'create'])->name('session.create');
+        Route::post('/store', [SessionController::class, 'store'])->name('session.store');
+        Route::get('/edit/{id}', [SessionController::class, 'edit'])->name('session.edit');
+        Route::put('/update', [SessionController::class, 'update'])->name('session.update');
+        Route::get('/datatable-list', [SessionController::class, 'datatableList'])->name('session.datatable.list');
+        Route::post('/delete/', [SessionController::class, 'delete'])->name('session.delete');
+    });
+
+    Route::get('/session/user/ajax/all-users', [UserController::class, 'ajaxAllUsers']);
 
     /**
      * User Profile
@@ -929,6 +1073,22 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/stock-transfer/item/get-records', [StockTransferReportController::class, 'getStockTransferItemRecords'])->name('report.stock_transfer.item.ajax');
 
+        /*Report -> Stock Adjustment -> Stock Adjustment  */
+        Route::get('/stock-adjustment', function () {
+            return view('report.stock-adjustment.stock-adjustment');
+        })->middleware('can:report.stock_adjustment')
+            ->name('report.stock_adjustment'); //View
+
+        Route::post('/stock-adjustment/get-records', [StockAdjustmentReportController::class, 'getStockAdjustmentRecords'])->name('report.stock_adjustment.ajax');
+
+        /*Report -> Stock Adjustment -> Items*/
+        Route::get('/stock-adjustment/item', function () {
+            return view('report.stock-adjustment.item-stock-adjustment');
+        })->middleware('can:report.stock_adjustment.item')
+            ->name('report.stock_adjustment.item'); //View
+
+        Route::post('/stock-adjustment/item/get-records', [StockAdjustmentReportController::class, 'getStockAdjustmentItemRecords'])->name('report.stock_adjustment.item.ajax');
+
         /*Report -> Due Payments -> Customer */
         Route::get('/customer/due', function () {
             return view('report.party.due-payment.customer');
@@ -1186,9 +1346,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/batch/stock/ajax/get-list', [ItemController::class, 'getAjaxItemBatchStockList']);
 
         /**
+         * Load Items for search box for autocomplete
+         * */
+        Route::get('/batch-table-records/ajax/get-list', [ItemController::class, 'getAjaxItemBatchTableRecords']);
+
+        /**
          * Load Brand for search box for Select2
          * */
         Route::get('/brand/select2/ajax/get-list', [BrandController::class, 'getAjaxSearchBarList']);
+
+        /**
+         * Load Category for search box for Select2
+         * */
+        Route::get('/category/select2/ajax/get-list', [ItemCategoryController::class, 'getAjaxSearchBarList']);
 
         /**
          * Generate Barcode
@@ -1316,6 +1486,12 @@ Route::middleware('auth')->group(function () {
          * Load Purchased Items
          */
         Route::get('/purchased-items/{partyId}/{itemId?}', [PurchaseController::class, 'getPurchasedItemsData']);
+
+        /**
+         * Ajax selection box search
+         * Load Invoice Details for Sale
+         * */
+        Route::get('/ajax/get-list', [SaleController::class, 'getAjaxSearchBarList']);
     });
 
     /**
@@ -1483,6 +1659,13 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:sale.invoice.view')
             ->name('sale.invoice.pos.print');
         //Route::post('/store', [SaleController::class, 'store'])->name('sale.invoice.store');//Save operation
+        Route::get('/pending/list', [PosPendingController::class, 'list'])
+            ->middleware('can:sale.invoice.create')
+            ->name('pos.pending.list');
+
+        Route::get('/pending/{id}', [PosPendingController::class, 'show'])
+            ->middleware('can:sale.invoice.create')
+            ->name('pos.pending.show');
     });
 
     /**
@@ -1543,7 +1726,6 @@ Route::middleware('auth')->group(function () {
          * Load Sold Items which is used in Sale Return Page
          */
         Route::get('/sold-items/{partyId}/{itemId?}', [SaleController::class, 'getSoldItemsData']);
-
 
         /**
          * Ajax selection box search
@@ -1741,8 +1923,23 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/print/list-close-cash/{id}/{type?}', [CloseCashController::class, 'printCloseCash'])
             ->name('close-cash.print');
-    });
 
+        Route::get('/report-x-print', [CloseCashController::class, 'generateReportX'])
+            ->middleware('can:transaction.cash.view')
+            ->name('transaction.report-x.print');
+
+        Route::get('/report-x-pdf', [CloseCashController::class, 'generateReportXPdf'])
+            ->middleware('can:transaction.cash.view')
+            ->name('transaction.report-x.pdf');
+
+        Route::get('/report-z-print', [CloseCashController::class, 'generateReportZ'])
+            ->middleware('can:transaction.cash.view')
+            ->name('transaction.report-z.print');
+
+        Route::get('/report-z-pdf', [CloseCashController::class, 'generateReportZPdf'])
+            ->middleware('can:transaction.cash.view')
+            ->name('transaction.report-z.pdf');
+    });
 
     /**
      * Status History

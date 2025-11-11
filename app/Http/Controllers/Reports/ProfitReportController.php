@@ -44,12 +44,13 @@ class ProfitReportController extends Controller
     }
 
 
-    public function getProfitRecords(Request $request) : JsonResponse{
-        try{
+    public function getProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
             ];
 
@@ -122,40 +123,40 @@ class ProfitReportController extends Controller
 
 
             $recordsArray = [
-                                    'sale_without_tax'              => $this->formatWithPrecision($saleTotalWithoutTaxAmount),
-                                    'sale_return_without_tax'       => $this->formatWithPrecision($saleReturnTotalWithoutTaxAmount),
-                                    'purchase_without_tax'          => $this->formatWithPrecision($purchaseTotalWithoutTaxAmount),
-                                    'purchase_return_without_tax'   => $this->formatWithPrecision($purchaseReturnTotalWithoutTaxAmount),
-                                    'gross_profit'                  => $this->formatWithPrecision($grossProfit),
-                                    'indirect_expense_without_tax'  => $this->formatWithPrecision($expenseTotalWithoutTaxAmount),
-                                    'shipping_charge'               => $this->formatWithPrecision($shippingChargeAmount),
-                                    'net_profit'                    => $this->formatWithPrecision($netProfit),
-                                    'sale_gross_profit'             => $this->formatWithPrecision($saleProfitTotalAmount['saleGrossProfit']),
-                                    'sale_net_profit'               => $this->formatWithPrecision($saleProfitTotalAmount['saleNetProfit']),
-                                ];
+                'sale_without_tax'              => $this->formatWithPrecision($saleTotalWithoutTaxAmount),
+                'sale_return_without_tax'       => $this->formatWithPrecision($saleReturnTotalWithoutTaxAmount),
+                'purchase_without_tax'          => $this->formatWithPrecision($purchaseTotalWithoutTaxAmount),
+                'purchase_return_without_tax'   => $this->formatWithPrecision($purchaseReturnTotalWithoutTaxAmount),
+                'gross_profit'                  => $this->formatWithPrecision($grossProfit),
+                'indirect_expense_without_tax'  => $this->formatWithPrecision($expenseTotalWithoutTaxAmount),
+                'shipping_charge'               => $this->formatWithPrecision($shippingChargeAmount),
+                'net_profit'                    => $this->formatWithPrecision($netProfit),
+                'sale_gross_profit'             => $this->formatWithPrecision($saleProfitTotalAmount['saleGrossProfit']),
+                'sale_net_profit'               => $this->formatWithPrecision($saleProfitTotalAmount['saleNetProfit']),
+            ];
 
             return response()->json([
-                        'status'    => true,
-                        'message'   => "Records are retrieved!!",
-                        'data'      => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message'   => "Records are retrieved!!",
+                'data'      => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
-
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
 
-    public function purchaseTotalAmount($fromDate, $toDate, $warehouseId){
+    public function purchaseTotalAmount($fromDate, $toDate, $warehouseId)
+    {
         //If warehouseId is not provided, fetch warehouses accessible to the user
         $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
         $purchase = Purchase::with(['itemTransaction' => fn($q) => $q->whereIn('warehouse_id', $warehouseIds)])
-                    ->select('id', 'purchase_date', 'shipping_charge', 'is_shipping_charge_distributed', 'round_off')
-                    ->whereBetween('purchase_date', [$fromDate, $toDate])
-                    ->get();
+            ->select('id', 'purchase_date', 'shipping_charge', 'is_shipping_charge_distributed', 'round_off')
+            ->whereBetween('purchase_date', [$fromDate, $toDate])
+            ->get();
 
         if ($purchase->isNotEmpty()) {
             $totalDiscount = $purchase->flatMap->itemTransaction->sum('discount_amount') + $purchase->sum('round_off');
@@ -169,14 +170,15 @@ class ProfitReportController extends Controller
 
 
         return [
-                'totalDiscount' => $totalDiscount ?? 0,
-                'totalNetPrice' => $totalNetPrice ?? 0,
-                'totalShippingCharge' => $totalShippingCharge ?? 0,
-                'totalTax' => $totalTax ?? 0,
+            'totalDiscount' => $totalDiscount ?? 0,
+            'totalNetPrice' => $totalNetPrice ?? 0,
+            'totalShippingCharge' => $totalShippingCharge ?? 0,
+            'totalTax' => $totalTax ?? 0,
         ];
     }
 
-    public function purchaseReturnTotalAmount($fromDate, $toDate, $warehouseId){
+    public function purchaseReturnTotalAmount($fromDate, $toDate, $warehouseId)
+    {
         //If warehouseId is not provided, fetch warehouses accessible to the user
         $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
@@ -185,34 +187,36 @@ class ProfitReportController extends Controller
             ->whereBetween('return_date', [$fromDate, $toDate])
             ->get();
 
-        if($purchase->isNotEmpty()){
+        if ($purchase->isNotEmpty()) {
             $totalDiscount = $purchase->flatMap->itemTransaction->sum('discount_amount') + $purchase->sum('round_off');
             $totalNetPrice = $purchase->flatMap->itemTransaction->sum('total');
             $totalTax = $purchase->flatMap->itemTransaction->sum('tax_amount');
         }
 
         return [
-                'totalDiscount' => $totalDiscount ?? 0,
-                'totalNetPrice' => $totalNetPrice ?? 0,
-                'totalTax' => $totalTax ?? 0,
+            'totalDiscount' => $totalDiscount ?? 0,
+            'totalNetPrice' => $totalNetPrice ?? 0,
+            'totalTax' => $totalTax ?? 0,
         ];
     }
 
-    public function expenseTotalAmount($fromDate, $toDate){
+    public function expenseTotalAmount($fromDate, $toDate)
+    {
         return Expense::select('id', 'expense_date')
-                        ->whereBetween('expense_date', [$fromDate, $toDate])
-                        ->sum('grand_total');
+            ->whereBetween('expense_date', [$fromDate, $toDate])
+            ->sum('grand_total');
     }
 
     /**
      * Sale Item Wise Profit & Loss Report
      */
-    public function getItemWiseProfitRecords(Request $request) : JsonResponse {
-        try{
+    public function getItemWiseProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'item_warehouse_id' => ['nullable', 'exists:warehouses,id'],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
             ];
@@ -237,24 +241,24 @@ class ProfitReportController extends Controller
             $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
             $preparedData = Sale::with('party', 'itemTransaction.item.brand', 'itemTransaction.warehouse')
-                                ->with(['itemTransaction' => function($q) use ($itemId, $brandId, $warehouseIds) {
-                                    $q->whereIn('warehouse_id', $warehouseIds);
-                                    if ($itemId) {
-                                        $q->where('item_id', $itemId);
-                                    }
-                                    if ($brandId) {
-                                        $q->whereHas('item', function ($query) use ($brandId) {
-                                            $query->where('brand_id', $brandId);
-                                        });
-                                    }
-                                }])
-                                ->whereBetween('sale_date', [$fromDate, $toDate])
-                                // ->when($partyId, function ($query) use ($partyId) {
-                                //     return $query->where('party_id', $partyId);
-                                // })
-                                ->get();
+                ->with(['itemTransaction' => function ($q) use ($itemId, $brandId, $warehouseIds) {
+                    $q->whereIn('warehouse_id', $warehouseIds);
+                    if ($itemId) {
+                        $q->where('item_id', $itemId);
+                    }
+                    if ($brandId) {
+                        $q->whereHas('item', function ($query) use ($brandId) {
+                            $query->where('brand_id', $brandId);
+                        });
+                    }
+                }])
+                ->whereBetween('sale_date', [$fromDate, $toDate])
+                // ->when($partyId, function ($query) use ($partyId) {
+                //     return $query->where('party_id', $partyId);
+                // })
+                ->get();
 
-            if($preparedData->count() == 0){
+            if ($preparedData->count() == 0) {
                 throw new \Exception('No Records Found!!');
             }
             $recordsArray = [];
@@ -294,16 +298,15 @@ class ProfitReportController extends Controller
             }
 
             return response()->json([
-                        'status'    => true,
-                        'message' => "Records are retrieved!!",
-                        'data' => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message' => "Records are retrieved!!",
+                'data' => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
-
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
 
@@ -311,12 +314,13 @@ class ProfitReportController extends Controller
      * Invoice Wise PRofit & Loss Report
      *
      */
-    public function getInvoiceWiseProfitRecords(Request $request) : JsonResponse {
-        try{
+    public function getInvoiceWiseProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'sale_id'           => ['nullable', 'exists:sales,id'],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
             ];
@@ -338,16 +342,16 @@ class ProfitReportController extends Controller
             $warehouseIds = User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
             $preparedData = Sale::with('party', 'itemTransaction.item.brand', 'itemTransaction.warehouse')
-                                ->with(['itemTransaction' => function($q) use ($warehouseIds) {
-                                    $q->whereIn('warehouse_id', $warehouseIds);
-                                }])
-                                ->whereBetween('sale_date', [$fromDate, $toDate])
-                                ->when($saleId, function ($query) use ($saleId) {
-                                    return $query->where('id', $saleId);
-                                })
-                                ->get();
+                ->with(['itemTransaction' => function ($q) use ($warehouseIds) {
+                    $q->whereIn('warehouse_id', $warehouseIds);
+                }])
+                ->whereBetween('sale_date', [$fromDate, $toDate])
+                ->when($saleId, function ($query) use ($saleId) {
+                    return $query->where('id', $saleId);
+                })
+                ->get();
 
-            if($preparedData->count() == 0){
+            if ($preparedData->count() == 0) {
                 throw new \Exception('No Records Found!!');
             }
 
@@ -357,7 +361,7 @@ class ProfitReportController extends Controller
                 return $sale->itemTransaction->pluck('item_id');
             })->unique()->toArray();
             // Calculate average purchase price for the items sold in this sale invoice(s)
-            $itemPrices = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, warehouseId:null, useGlobalPurchasePrice:true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
+            $itemPrices = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, warehouseId: null, useGlobalPurchasePrice: true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
 
             $recordsArray = [];
             foreach ($preparedData as $sale) {
@@ -393,24 +397,25 @@ class ProfitReportController extends Controller
                 ];
             }
             return response()->json([
-                        'status'    => true,
-                        'message' => "Records are retrieved!!",
-                        'data' => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message' => "Records are retrieved!!",
+                'data' => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
 
-    public function getCustomerWiseProfitRecords(Request $request) : JsonResponse {
-        try{
+    public function getCustomerWiseProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'customer_id'           => ['nullable', 'exists:parties,id'],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
             ];
@@ -432,16 +437,16 @@ class ProfitReportController extends Controller
             $warehouseIds = User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
             $preparedData = Sale::with('party', 'itemTransaction.item', 'itemTransaction.warehouse')
-                                ->with(['itemTransaction' => function($q) use ($warehouseIds) {
-                                    $q->whereIn('warehouse_id', $warehouseIds);
-                                }])
-                                ->whereBetween('sale_date', [$fromDate, $toDate])
-                                ->when($customerId, function ($query) use ($customerId) {
-                                    return $query->where('party_id', $customerId);
-                                })
-                                ->get();
+                ->with(['itemTransaction' => function ($q) use ($warehouseIds) {
+                    $q->whereIn('warehouse_id', $warehouseIds);
+                }])
+                ->whereBetween('sale_date', [$fromDate, $toDate])
+                ->when($customerId, function ($query) use ($customerId) {
+                    return $query->where('party_id', $customerId);
+                })
+                ->get();
 
-            if($preparedData->count() == 0){
+            if ($preparedData->count() == 0) {
                 throw new \Exception('No Records Found!!');
             }
 
@@ -467,7 +472,7 @@ class ProfitReportController extends Controller
                 $itemIdsArray = $itemTransactions->pluck('item_id')->unique()->toArray();
 
                 // Calculate average purchase price for the items sold to this customer
-                $itemPrices = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, warehouseId:null, useGlobalPurchasePrice:true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
+                $itemPrices = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, warehouseId: null, useGlobalPurchasePrice: true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
 
                 // Calculate purchase cost for all items
                 $purchaseCost = $itemTransactions->sum(function ($transaction) use ($itemPrices) {
@@ -491,24 +496,25 @@ class ProfitReportController extends Controller
             }
 
             return response()->json([
-                        'status'    => true,
-                        'message' => "Records are retrieved!!",
-                        'data' => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message' => "Records are retrieved!!",
+                'data' => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
 
-    public function getBrandWiseProfitRecords(Request $request) : JsonResponse {
-        try{
+    public function getBrandWiseProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'brand_id'          => ['nullable', 'exists:brands,id'],
                 'brand_warehouse_id'      => ['nullable', 'exists:warehouses,id'],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
@@ -532,18 +538,18 @@ class ProfitReportController extends Controller
             $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
             $preparedData = Sale::with('party', 'itemTransaction.item.brand', 'itemTransaction.warehouse')
-                                ->with(['itemTransaction' => function($q) use ($brandId, $warehouseIds) {
-                                    if ($brandId) {
-                                        $q->whereHas('item', function ($query) use ($brandId) {
-                                            $query->where('brand_id', $brandId);
-                                        });
-                                    }
-                                    $q->whereIn('warehouse_id', $warehouseIds);
-                                }])
-                                ->whereBetween('sale_date', [$fromDate, $toDate])
-                                ->get();
+                ->with(['itemTransaction' => function ($q) use ($brandId, $warehouseIds) {
+                    if ($brandId) {
+                        $q->whereHas('item', function ($query) use ($brandId) {
+                            $query->where('brand_id', $brandId);
+                        });
+                    }
+                    $q->whereIn('warehouse_id', $warehouseIds);
+                }])
+                ->whereBetween('sale_date', [$fromDate, $toDate])
+                ->get();
 
-            if($preparedData->count() == 0){
+            if ($preparedData->count() == 0) {
                 throw new \Exception('No Records Found!!');
             }
 
@@ -552,7 +558,7 @@ class ProfitReportController extends Controller
                 return $sale->itemTransaction->pluck('item_id');
             })->unique()->toArray();
             // Calculate average purchase price for the items sold in this sale invoice(s)
-            $purchaseCostOfEachItem = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, $warehouseId, useGlobalPurchasePrice:true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
+            $purchaseCostOfEachItem = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, $warehouseId, useGlobalPurchasePrice: true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
 
 
             //Group by brand and calculate profit for each brand
@@ -606,25 +612,26 @@ class ProfitReportController extends Controller
                 ];
             }
             return response()->json([
-                        'status'    => true,
-                        'message' => "Records are retrieved!!",
-                        'data' => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message' => "Records are retrieved!!",
+                'data' => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
 
 
-    public function getCategoryWiseProfitRecords(Request $request) : JsonResponse {
-        try{
+    public function getCategoryWiseProfitRecords(Request $request): JsonResponse
+    {
+        try {
             // Validation rules
             $rules = [
-                'from_date'         => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
-                'to_date'           => ['required', 'date_format:'.implode(',', $this->getDateFormats())],
+                'from_date'         => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
+                'to_date'           => ['required', 'date_format:' . implode(',', $this->getDateFormats())],
                 'category_id'          => ['nullable', 'exists:item_categories,id'],
                 'category_warehouse_id'      => ['nullable', 'exists:warehouses,id'],
                 'use_sale_avg_date_range' => ['nullable', 'boolean'],
@@ -648,18 +655,18 @@ class ProfitReportController extends Controller
             $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
 
             $preparedData = Sale::with('party', 'itemTransaction.item.category', 'itemTransaction.warehouse')
-                                ->with(['itemTransaction' => function($q) use ($categoryId, $warehouseIds) {
-                                    if ($categoryId) {
-                                        $q->whereHas('item', function ($query) use ($categoryId) {
-                                            $query->where('item_category_id', $categoryId);
-                                        });
-                                    }
-                                    $q->whereIn('warehouse_id', $warehouseIds);
-                                }])
-                                ->whereBetween('sale_date', [$fromDate, $toDate])
-                                ->get();
+                ->with(['itemTransaction' => function ($q) use ($categoryId, $warehouseIds) {
+                    if ($categoryId) {
+                        $q->whereHas('item', function ($query) use ($categoryId) {
+                            $query->where('item_category_id', $categoryId);
+                        });
+                    }
+                    $q->whereIn('warehouse_id', $warehouseIds);
+                }])
+                ->whereBetween('sale_date', [$fromDate, $toDate])
+                ->get();
 
-            if($preparedData->count() == 0){
+            if ($preparedData->count() == 0) {
                 throw new \Exception('No Records Found!!');
             }
 
@@ -668,7 +675,7 @@ class ProfitReportController extends Controller
                 return $sale->itemTransaction->pluck('item_id');
             })->unique()->toArray();
             // Calculate average purchase price for the items sold in this sale invoice(s)
-            $purchaseCostOfEachItem = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, $warehouseId, useGlobalPurchasePrice:true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
+            $purchaseCostOfEachItem = $this->itemTransactionService->calculateEachItemSaleAndPurchasePrice($itemIdsArray, $warehouseId, useGlobalPurchasePrice: true, saleTransactionDateRange: !$useSaleAvgDateRange ? [] : ['from_date' => $fromDate, 'to_date' => $toDate]);
 
 
             //Group by category and calculate profit for each category
@@ -722,21 +729,15 @@ class ProfitReportController extends Controller
                 ];
             }
             return response()->json([
-                        'status'    => true,
-                        'message' => "Records are retrieved!!",
-                        'data' => $recordsArray,
-                    ]);
+                'status'    => true,
+                'message' => "Records are retrieved!!",
+                'data' => $recordsArray,
+            ]);
         } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
     }
-
-
-
-
-
-
 }

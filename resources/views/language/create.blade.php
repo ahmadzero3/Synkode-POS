@@ -7,9 +7,11 @@
         <div class="page-content">
             <x-breadcrumb :langArray="['app.settings', 'language.languages', 'language.create']" />
             <div class="row">
-                <div class="col-12 col-lg-6">
+                <!-- 🔹 Changed from col-lg-6 to col-12 to make card full width -->
+                <div class="col-12">
                     @include('layouts.session')
-                    <div class="card">
+                    <!-- 🔹 Added w-100 to ensure the card stretches full width -->
+                    <div class="card w-100">
                         <div class="card-header px-4 py-3">
                             <h5 class="mb-0">{{ __('language.details') }}</h5>
                         </div>

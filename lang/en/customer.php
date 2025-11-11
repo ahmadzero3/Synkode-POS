@@ -20,4 +20,6 @@ return [
     'due_payment_report'        => "Customer Due Payment Report",
     /*1.2.1*/
     'default_customer'          => "Set as a default Customer",
+    //2.4.1
+    'receivables_minus_payables' => 'Customer Receivable - Payble',
 ];

@@ -174,7 +174,7 @@
                         @if(app('company')['tax_type'] != 'no-tax')
                         <td class="text-end">
                             {{ $formatNumber->formatWithPrecision($transaction->tax_amount) }}<br>
-                            <small>({{ $transaction->tax->rate }}%)</small>
+                            <small>({{ $transaction->tax->rate ?? 0 }}%)</small>
                         </td>
                         @endif
                         <td class="text-end">
@@ -361,12 +361,12 @@
                     }*/
                     });
                     return [
-                    'tax_id' => $firstItem->tax_id,
-                    'tax_name' => $firstItem->tax->name,
-                    'tax_rate' => $firstItem->tax->rate,
-                    'total_taxable_amount' => $totalTaxableAmount,
-                    'total_tax' => $group->sum('tax_amount')
-                    ];
+    'tax_id' => $firstItem->tax_id,
+    'tax_name' => $firstItem->tax->name ?? 'N/A',
+    'tax_rate' => $firstItem->tax->rate ?? 0,
+    'total_taxable_amount' => $totalTaxableAmount,
+    'total_tax' => $group->sum('tax_amount')
+];
                     })
                     ->values();
                     }
@@ -389,13 +389,13 @@
                     }*/
                     });
                     return [
-                    'hsn' => $firstItem->item->hsn,
-                    'tax_id' => $firstItem->tax_id,
-                    'tax_name' => $firstItem->tax->name,
-                    'tax_rate' => $firstItem->tax->rate,
-                    'total_taxable_amount' => $totalTaxableAmount,
-                    'total_tax' => $group->sum('tax_amount')
-                    ];
+    'hsn' => $firstItem->item->hsn,
+    'tax_id' => $firstItem->tax_id,
+    'tax_name' => $firstItem->tax->name ?? 'N/A',
+    'tax_rate' => $firstItem->tax->rate ?? 0,
+    'total_taxable_amount' => $totalTaxableAmount,
+    'total_tax' => $group->sum('tax_amount')
+];
                     });
                     })
                     ->flatMap(function ($hsnGroup) {

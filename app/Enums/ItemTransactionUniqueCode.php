@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Enums;
 
-enum ItemTransactionUniqueCode:string{
-    /**
+enum ItemTransactionUniqueCode: string
+{
+/**
      * Applied in tables
      * 1. item_transaction
      * 2. item_batch_transaction
@@ -22,6 +24,4 @@ enum ItemTransactionUniqueCode:string{
     case STOCK_ADJUSTMENT               = 'STOCK_ADJUSTMENT';
     case STOCK_ADJUSTMENT_INCREASE        = 'STOCK_ADJUSTMENT_INCREASE';
     case STOCK_ADJUSTMENT_DECREASE        = 'STOCK_ADJUSTMENT_DECREASE';
-
-
 }

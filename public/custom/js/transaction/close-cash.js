@@ -232,8 +232,8 @@ $(function () {
                 url: baseURL + "/sale/invoice/datatable-list",
                 data: {
                     party_id: $("#party_id").val(),
+                    // 🔒 This param is filled by Blade: user_id = auth()->id() when the user has a Register, else ''
                     user_id: $("#user_id").val(),
-
                     from_date: $('input[name="from_date"]').val(),
                     to_date: $('input[name="to_date"]').val(),
                 },
@@ -259,12 +259,11 @@ $(function () {
                     orderable: false,
                     className: "text-center",
                     render: function (data, type, full, meta) {
-                        let orderCode = data.sale_code || ""; // Default if sale_code is null
+                        let orderCode = data.sale_code || "";
                         let statusBadge = "";
 
-                        // Check if status is an object and extract data
-                        let statusText = data.status?.text || ""; // Get text from status object
-                        let statusCode = data.status?.code || ""; // Get sale_order or quotation code
+                        let statusText = data.status?.text || "";
+                        let statusCode = data.status?.code || "";
                         let statusUrl = data.status?.url || "";
 
                         if (statusText === "Converted from Sale Order") {
@@ -305,7 +304,6 @@ $(function () {
                                                 </div>`;
                         }
 
-                        // Combine order code and status badge
                         return `<div>
                                         <strong>${orderCode}</strong><br>
                                         ${statusBadge}
@@ -330,10 +328,8 @@ $(function () {
                 "<'row' " +
                 "<'col-sm-12' " +
                 "<'float-start' l" +
-                /* card-body class - auto created here */
                 ">" +
                 "<'float-end' fr" +
-                /* card-body class - auto created here */
                 ">" +
                 "<'float-end ms-2'" +
                 "<'card-body ' B >" +
@@ -349,38 +345,25 @@ $(function () {
                         "btn btn-outline-danger buttons-copy buttons-html5 multi_delete",
                     text: "Delete",
                     action: function (e, dt, node, config) {
-                        //Confirm user then trigger submit event
                         requestDeleteRecords();
                     },
                 },
-                // Apply exportOptions only to Copy button
                 {
                     extend: "copyHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to Excel button
                 {
                     extend: "excelHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to CSV button
                 {
                     extend: "csvHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to PDF button
                 {
                     extend: "pdfHtml5",
-                    orientation: "portrait", //or "landscape"
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    orientation: "portrait",
+                    exportOptions: { columns: exportColumns },
                 },
             ],
 
@@ -390,23 +373,17 @@ $(function () {
             },
             order: [[0, "desc"]],
             drawCallback: function () {
-                /**
-                 * Initialize Tooltip
-                 * */
                 setTooltip();
             },
         });
 
         table.on("click", ".deleteRequest", function () {
             let deleteId = $(this).attr("data-delete-id");
-
             deleteRequest(deleteId);
         });
 
-        //Adding Space on top & bottom of the table attributes
-        $(
-            ".dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate"
-        ).wrap("<div class='card-body py-3'>");
+        $(".dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate")
+            .wrap("<div class='card-body py-3'>");
     };
 
     // Handle header checkbox click event
@@ -415,24 +392,10 @@ $(function () {
         tableId.find("tbody .row-select").prop("checked", isChecked);
     });
 
-    /**
-     * @return count
-     * How many checkbox are checked
-     */
-    function countCheckedCheckbox() {
-        var checkedCount = $('input[name="record_ids[]"]:checked').length;
-        return checkedCount;
-    }
-
-    /**
-     * Validate checkbox are checked
-     */
     async function validateCheckedCheckbox() {
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
-        if (!confirmed) {
-            return false;
-        }
-        if (countCheckedCheckbox() == 0) {
+        const confirmed = await confirmAction();
+        if (!confirmed) return false;
+        if ($('input[name="record_ids[]"]:checked').length == 0) {
             iziToast.error({
                 title: "Warning",
                 layout: 2,
@@ -442,34 +405,22 @@ $(function () {
         }
         return true;
     }
-    /**
-     * Caller:
-     * Function to single delete request
-     * Call Delete Request
-     */
+
     async function deleteRequest(id) {
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
+        const confirmed = await confirmAction();
         if (confirmed) {
             deleteRecord(id);
         }
     }
 
-    /**
-     * Create Ajax Request:
-     * Multiple Data Delete
-     */
     async function requestDeleteRecords() {
-        //validate checkbox count
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
+        const confirmed = await confirmAction();
         if (confirmed) {
-            //Submit delete records
-            datatableForm.trigger("submit");
+            $("#saleInvoiceForm").trigger("submit");
         }
     }
-    datatableForm.on("submit", function (e) {
+    $("#saleInvoiceForm").on("submit", function (e) {
         e.preventDefault();
-
-        //Form posting Functionality
         const form = $(this);
         const formArray = {
             formId: form.attr("id"),
@@ -479,31 +430,23 @@ $(function () {
             formObject: form,
             formData: new FormData(document.getElementById(form.attr("id"))),
         };
-        ajaxRequest(formArray); //Defined in ./common/common.js
+        ajaxRequest(formArray);
     });
 
-    /**
-     * Create AjaxRequest:
-     * Single Data Delete
-     */
     function deleteRecord(id) {
-        const form = datatableForm;
+        const form = $("#saleInvoiceForm");
         const formArray = {
             formId: form.attr("id"),
             csrf: form.find('input[name="_token"]').val(),
             _method: form.find('input[name="_method"]').val(),
             url: form.closest("form").attr("action"),
             formObject: form,
-            formData: new FormData(), // Create a new FormData object
+            formData: new FormData(),
         };
-        // Append the 'id' to the FormData object
         formArray.formData.append("record_ids[]", id);
-        ajaxRequest(formArray); //Defined in ./common/common.js
+        ajaxRequest(formArray);
     }
 
-    /**
-     * Ajax Request
-     */
     function ajaxRequest(formArray) {
         var jqxhr = $.ajax({
             type: formArray._method,
@@ -514,12 +457,6 @@ $(function () {
             processData: false,
             headers: {
                 "X-CSRF-TOKEN": formArray.csrf,
-            },
-            beforeSend: function () {
-                // Actions to be performed before sending the AJAX request
-                if (typeof beforeCallAjaxRequest === "function") {
-                    // Action Before Proceeding request
-                }
             },
         });
         jqxhr.done(function (data) {
@@ -534,26 +471,18 @@ $(function () {
             iziToast.error({ title: "Error", layout: 2, message: message });
         });
         jqxhr.always(function () {
-            // Actions to be performed after the AJAX request is completed, regardless of success or failure
             if (typeof afterCallAjaxResponse === "function") {
                 afterCallAjaxResponse(formArray.formObject);
             }
         });
     }
 
-    function afterCallAjaxResponse(formObject) {
+    function afterCallAjaxResponse() {
         loadDatatables();
     }
 
     $(document).ready(function () {
-        //Load Datatable
         loadDatatables();
-
-        /**
-         * Modal payment type, reinitiate initSelect2PaymentType() for modal
-         * Call because modal won't support ajax search input box cursor.
-         * by this code it works
-         * */
         initSelect2PaymentType({ dropdownParent: $("#invoicePaymentModal") });
     });
 
@@ -572,14 +501,10 @@ $(function () {
     const tableId = $("#expenseTable");
     const datatableForm = $("#expenseForm");
 
-    /**
-     *Server Side Datatable Records
-     */
     function loadDatatables() {
-        //Delete previous data
         tableId.DataTable().destroy();
 
-        var exportColumns = [2, 3, 4, 5, 6, 7, 8]; //Index Starts from 0
+        var exportColumns = [2, 3, 4, 5, 6, 7, 8];
 
         var table = tableId.DataTable({
             processing: true,
@@ -587,11 +512,13 @@ $(function () {
             method: "get",
             ajax: {
                 url: baseURL + "/expense/datatable-list",
-                type: "GET", // <-- explicitly use type, not 'method'
+                type: "GET",
                 data: {
                     expense_category_id: $("#expense_category_id").val(),
                     from_date: $('input[name="from_date"]').val(),
                     to_date: $('input[name="to_date"]').val(),
+                    // 🔒 add user_id so backend can filter expenses by creator when cashier has a Register
+                    user_id: $("#user_id").val()
                 },
                 error: function (xhr, error, thrown) {
                     console.error("Expense AJAX error:", xhr.responseText);
@@ -636,10 +563,8 @@ $(function () {
                 "<'row' " +
                 "<'col-sm-12' " +
                 "<'float-start' l" +
-                /* card-body class - auto created here */
                 ">" +
                 "<'float-end' fr" +
-                /* card-body class - auto created here */
                 ">" +
                 "<'float-end ms-2'" +
                 "<'card-body ' B >" +
@@ -655,38 +580,25 @@ $(function () {
                         "btn btn-outline-danger buttons-copy buttons-html5 multi_delete",
                     text: "Delete",
                     action: function (e, dt, node, config) {
-                        //Confirm user then trigger submit event
                         requestDeleteRecords();
                     },
                 },
-                // Apply exportOptions only to Copy button
                 {
                     extend: "copyHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to Excel button
                 {
                     extend: "excelHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to CSV button
                 {
                     extend: "csvHtml5",
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    exportOptions: { columns: exportColumns },
                 },
-                // Apply exportOptions only to PDF button
                 {
                     extend: "pdfHtml5",
-                    orientation: "portrait", //or "landscape"
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
+                    orientation: "portrait",
+                    exportOptions: { columns: exportColumns },
                 },
             ],
 
@@ -703,10 +615,8 @@ $(function () {
             deleteRequest(deleteId);
         });
 
-        //Adding Space on top & bottom of the table attributes
-        $(
-            ".dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate"
-        ).wrap("<div class='card-body py-3'>");
+        $(".dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate")
+            .wrap("<div class='card-body py-3'>");
     }
 
     // Handle header checkbox click event
@@ -715,24 +625,10 @@ $(function () {
         tableId.find("tbody .row-select").prop("checked", isChecked);
     });
 
-    /**
-     * @return count
-     * How many checkbox are checked
-     */
-    function countCheckedCheckbox() {
-        var checkedCount = $('input[name="record_ids[]"]:checked').length;
-        return checkedCount;
-    }
-
-    /**
-     * Validate checkbox are checked
-     */
     async function validateCheckedCheckbox() {
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
-        if (!confirmed) {
-            return false;
-        }
-        if (countCheckedCheckbox() == 0) {
+        const confirmed = await confirmAction();
+        if (!confirmed) return false;
+        if ($('input[name="record_ids[]"]:checked').length == 0) {
             iziToast.error({
                 title: "Warning",
                 layout: 2,
@@ -742,34 +638,23 @@ $(function () {
         }
         return true;
     }
-    /**
-     * Caller:
-     * Function to single delete request
-     * Call Delete Request
-     */
+
     async function deleteRequest(id) {
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
+        const confirmed = await confirmAction();
         if (confirmed) {
             deleteRecord(id);
         }
     }
 
-    /**
-     * Create Ajax Request:
-     * Multiple Data Delete
-     */
     async function requestDeleteRecords() {
-        //validate checkbox count
-        const confirmed = await confirmAction(); //Defined in ./common/common.js
+        const confirmed = await confirmAction();
         if (confirmed) {
-            //Submit delete records
             datatableForm.trigger("submit");
         }
     }
     datatableForm.on("submit", function (e) {
         e.preventDefault();
 
-        //Form posting Functionality
         const form = $(this);
         const formArray = {
             formId: form.attr("id"),
@@ -779,13 +664,9 @@ $(function () {
             formObject: form,
             formData: new FormData(document.getElementById(form.attr("id"))),
         };
-        ajaxRequest(formArray); //Defined in ./common/common.js
+        ajaxRequest(formArray);
     });
 
-    /**
-     * Create AjaxRequest:
-     * Single Data Delete
-     */
     function deleteRecord(id) {
         const form = datatableForm;
         const formArray = {
@@ -794,16 +675,12 @@ $(function () {
             _method: form.find('input[name="_method"]').val(),
             url: form.closest("form").attr("action"),
             formObject: form,
-            formData: new FormData(), // Create a new FormData object
+            formData: new FormData(),
         };
-        // Append the 'id' to the FormData object
         formArray.formData.append("record_ids[]", id);
-        ajaxRequest(formArray); //Defined in ./common/common.js
+        ajaxRequest(formArray);
     }
 
-    /**
-     * Ajax Request
-     */
     function ajaxRequest(formArray) {
         var jqxhr = $.ajax({
             type: formArray._method,
@@ -812,15 +689,7 @@ $(function () {
             dataType: "json",
             contentType: false,
             processData: false,
-            headers: {
-                "X-CSRF-TOKEN": formArray.csrf,
-            },
-            beforeSend: function () {
-                // Actions to be performed before sending the AJAX request
-                if (typeof beforeCallAjaxRequest === "function") {
-                    // Action Before Proceeding request
-                }
-            },
+            headers: { "X-CSRF-TOKEN": formArray.csrf },
         });
         jqxhr.done(function (data) {
             iziToast.success({
@@ -834,19 +703,17 @@ $(function () {
             iziToast.error({ title: "Error", layout: 2, message: message });
         });
         jqxhr.always(function () {
-            // Actions to be performed after the AJAX request is completed, regardless of success or failure
             if (typeof afterCallAjaxResponse === "function") {
                 afterCallAjaxResponse(formArray.formObject);
             }
         });
     }
 
-    function afterCallAjaxResponse(formObject) {
+    function afterCallAjaxResponse() {
         loadDatatables();
     }
 
     $(document).ready(function () {
-        //Load Datatable
         loadDatatables();
     });
 

@@ -18,6 +18,7 @@ class POSController extends Controller
             'manual_order.*'     => 'integer',
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $userData = [

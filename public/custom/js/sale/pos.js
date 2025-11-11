@@ -51,6 +51,8 @@ $("#submit_form, #submit_form_with_print").on("click", function (event) {
 
     if (clickedId === "submit_form_with_print") {
         callType = "submit_form_with_print";
+
+        // 🔴 Always force invoice to finished when saving/printing
         $("#invoice_status").val("finished");
     }
 
@@ -661,16 +663,29 @@ function afterAddRowFunctionality(currentRowId) {
  * Generate Tax Type Selection Box
  * */
 function generateTaxSelectionBox(taxList, currentRowId, selectId = null) {
-    const options = Object.values(taxList)
+    // Check if taxList already has a "None" entry
+    const hasNone = Object.values(taxList).some(
+        (tax) => tax.name.toLowerCase() === "none"
+    );
+
+    let options = Object.values(taxList)
         .map(
             (tax) =>
-                `<option value="${tax.id}" data-tax-rate="${tax.rate}" ${selectId === tax.id ? "selected" : ""
+                `<option value="${tax.id}" data-tax-rate="${tax.rate}" ${selectId == tax.id ? "selected" : ""
                 }>${tax.name}</option>`
         )
         .join("");
 
+    // If no "None" option in list, prepend it
+    if (!hasNone) {
+        const noneOption = `<option value="" data-tax-rate="0" ${!selectId ? "selected" : ""
+            }>None</option>`;
+        options = noneOption + options;
+    }
+
     return `<select class="form-select" name="tax_id[${currentRowId}]">${options}</select>`;
 }
+
 
 /**
  * Generate Unit Selection Box
@@ -1719,7 +1734,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (customerDisplayWindow) {
                             customerDisplayWindow.focus();
-                            // ✅ FIX: push warehouse + items right after open
                             setTimeout(() => {
                                 sendWarehouseInfo();
                                 updateCustomerDisplay();
@@ -1736,7 +1750,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     );
 
                     if (customerDisplayWindow) {
-                        // ✅ FIX: same here for fallback
                         setTimeout(() => {
                             sendWarehouseInfo();
                             updateCustomerDisplay();
@@ -1785,10 +1798,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 };
 
                 try {
-                    // ✅ grab announcement text from ticker
                     const ticker = $(".ticker-content").text() || '';
 
-                    // ✅ send everything in one message
                     customerDisplayWindow.postMessage({
                         type: 'UPDATE_CUSTOMER_DISPLAY',
                         items,
@@ -1841,5 +1852,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }, 1000);
+    });
+    $(document).ready(function () {
+        const countInput = $('input[name="count_id"]');
+        const prefixInput = $('input[name="prefix_code"]');
+
+        // Hook into any form reset or reload
+        const originalReset = HTMLFormElement.prototype.reset;
+        HTMLFormElement.prototype.reset = function () {
+            originalReset.call(this);
+            // restore locked values
+            if (countInput.attr('data-locked')) {
+                countInput.val(countInput.val());
+            }
+            if (prefixInput.attr('data-locked')) {
+                prefixInput.val(prefixInput.val());
+            }
+        };
+
+        // Also block any accidental blank assignment from scripts
+        const originalVal = $.fn.val;
+        $.fn.val = function (value) {
+            if (arguments.length === 0) {
+                return originalVal.call(this);
+            }
+            const name = $(this).attr('name');
+            if ((name === 'count_id' || name === 'prefix_code') && $(this).attr('data-locked')) {
+                return this; // skip writing
+            }
+            return originalVal.call(this, value);
+        };
     });
 });

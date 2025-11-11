@@ -42,9 +42,10 @@ return [
     'company_email_address_is_empty'              => "عنوان البريد الإلكتروني للشركة فارغ!",
     'email_status'                                => "حالة البريد الإلكتروني",
 
-    'update_template'                           => "تحديث القالب",
-    'attachment'                                => "مرفق",
-    'auto_attach_invoice'                       => "إرفاق الفاتورة/الفاتورة تلقائيًا",
+    'update_template'                             => "تحديث القالب",
+    'attachment'                                  => "مرفق",
+    'auto_attach_invoice'                         => "إرفاق الفاتورة/الفاتورة تلقائيًا",
+    'no_items_added'                              => 'لم تتم إضافة عناصر بعد!',
 
 
 ];

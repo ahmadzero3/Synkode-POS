@@ -466,43 +466,47 @@ class ItemTransactionService
      * */
     public function updateItemBatchQuantityWarehouseWise($itemBatchMasterId)
     {
-        //Delete Records from ItemBatchQuantity
+        //Delete Reords from ItemBatchQuantity
         ItemBatchQuantity::where('item_batch_master_id', $itemBatchMasterId)->delete();
 
         $itemBatchTransactions = ItemBatchTransaction::selectRaw('
-                 (
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::PURCHASE->value . '\' THEN quantity ELSE 0 END), 0)
-                    -
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::PURCHASE_RETURN->value . '\' THEN quantity ELSE 0 END), 0)
-                    -
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::SALE->value . '\' THEN quantity ELSE 0 END), 0)
-                    +
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::SALE_RETURN->value . '\' THEN quantity ELSE 0 END), 0)
-                    +
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::ITEM_OPENING->value . '\' THEN quantity ELSE 0 END), 0)
-                    -
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::STOCK_TRANSFER->value . '\' THEN quantity ELSE 0 END), 0)
-                    +
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::STOCK_RECEIVE->value . '\' THEN quantity ELSE 0 END), 0)
-                    +
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_INCREASE->value . '\' THEN quantity ELSE 0 END), 0)
-                    -
-                    COALESCE(SUM(CASE WHEN unique_code = \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_DECREASE->value . '\' THEN quantity ELSE 0 END), 0)
-                ) as item_batch_warehouse_stock,
-                item_id,
-                warehouse_id,
-                item_batch_master_id
-            ')
+                     (
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::PURCHASE->value . '" THEN quantity ELSE 0 END), 0)
+                        -
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::PURCHASE_RETURN->value . '" THEN quantity ELSE 0 END), 0)
+                        -
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::SALE->value . '" THEN quantity ELSE 0 END), 0)
+                        +
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::SALE_RETURN->value . '" THEN quantity ELSE 0 END), 0)
+                        +
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::ITEM_OPENING->value . '" THEN quantity ELSE 0 END), 0)
+                        -
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::STOCK_TRANSFER->value . '" THEN quantity ELSE 0 END), 0)
+                        +
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::STOCK_RECEIVE->value . '" THEN quantity ELSE 0 END), 0)
+                        +
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_INCREASE->value . '" THEN quantity ELSE 0 END), 0)
+                        -
+                        COALESCE(SUM(CASE WHEN unique_code = "' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_DECREASE->value . '" THEN quantity ELSE 0 END), 0)
+                    ) as item_batch_warehouse_stock,
+                    item_id,
+                    warehouse_id,
+                    item_batch_master_id
+                ')
             ->where('item_batch_master_id', $itemBatchMasterId)
             ->whereNotIn('unique_code', [ItemTransactionUniqueCode::PURCHASE_ORDER->value, ItemTransactionUniqueCode::SALE_ORDER->value])
             ->groupBy('item_id', 'warehouse_id', 'item_batch_master_id')
             ->get();
 
         if ($itemBatchTransactions->isNotEmpty()) {
+
+            //Collection Group by warehouse
             $itemBatchTransactions = $itemBatchTransactions->groupBy('warehouse_id')->toArray();
 
+            //MULTIPLE SERIAL TRANSACTIONS
             foreach ($itemBatchTransactions as $warehouseId => $batchTransactions) {
                 foreach ($batchTransactions as $itemBatchTransaction) {
+                    //Record ItemBatchQuantity
                     $readyData = [
                         'item_id'               => $itemBatchTransaction['item_id'],
                         'warehouse_id'          => $warehouseId,
@@ -514,59 +518,64 @@ class ItemTransactionService
                     if (!$created) {
                         throw new \Exception(__('item.failed_to_save_batch_records'));
                     }
-                }
+                } //foreach itemBatchTransaction
             }
-        }
+        } //count>0 itemBatchTransaction
 
+
+        //Find the item id
         $itemId = ItemBatchMaster::where('id', $itemBatchMasterId)->first()->item_id;
+
+        /**
+         * Record Item All
+         * */
         $updateQuantityWarehouseWise = $this->updateItemGeneralQuantityWarehouseWise($itemId);
         if (!$updateQuantityWarehouseWise) {
             throw new \Exception('Failed to record General Items Stock Warehouse Wise!');
         }
 
+
         return true;
     }
 
-
     /**
-     * Update General Items warhouse wise
+     * Update General Items warehouse-wise
      *
-     * */
+     */
     public function updateItemGeneralQuantityWarehouseWise($itemGeneralMasterId)
     {
-
         $itemTransactions = ItemTransaction::selectRaw('
-                                COALESCE(SUM(
-                                    CASE
-                                        WHEN unique_code IN (
-                                            \'' . ItemTransactionUniqueCode::PURCHASE->value . '\',
-                                            \'' . ItemTransactionUniqueCode::SALE_RETURN->value . '\',
-                                            \'' . ItemTransactionUniqueCode::ITEM_OPENING->value . '\',
-                                            \'' . ItemTransactionUniqueCode::STOCK_RECEIVE->value . '\',
-                                            \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_INCREASE->value . '\'
-                                        ) THEN
-                                            CASE
-                                                WHEN items.base_unit_id = item_transactions.unit_id THEN quantity
-                                                WHEN items.secondary_unit_id = item_transactions.unit_id THEN quantity / items.conversion_rate
-                                                ELSE 0
-                                            END
-                                        WHEN unique_code IN (
-                                            \'' . ItemTransactionUniqueCode::PURCHASE_RETURN->value . '\',
-                                            \'' . ItemTransactionUniqueCode::SALE->value . '\',
-                                            \'' . ItemTransactionUniqueCode::STOCK_TRANSFER->value . '\',
-                                            \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_DECREASE->value . '\'
-                                        ) THEN
-                                            CASE
-                                                WHEN items.base_unit_id = item_transactions.unit_id THEN -quantity
-                                                WHEN items.secondary_unit_id = item_transactions.unit_id THEN -quantity / items.conversion_rate
-                                                ELSE 0
-                                            END
-                                        ELSE 0
-                                    END
-                                ), 0) AS item_general_warehouse_stock,
-                                item_id,
-                                warehouse_id
-                            ')
+        COALESCE(SUM(
+            CASE
+                WHEN unique_code IN (
+                    \'' . ItemTransactionUniqueCode::PURCHASE->value . '\',
+                    \'' . ItemTransactionUniqueCode::SALE_RETURN->value . '\',
+                    \'' . ItemTransactionUniqueCode::ITEM_OPENING->value . '\',
+                    \'' . ItemTransactionUniqueCode::STOCK_RECEIVE->value . '\',
+                    \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_INCREASE->value . '\'
+                ) THEN
+                    CASE
+                        WHEN items.base_unit_id = item_transactions.unit_id THEN quantity
+                        WHEN items.secondary_unit_id = item_transactions.unit_id THEN quantity / items.conversion_rate
+                        ELSE 0
+                    END
+                WHEN unique_code IN (
+                    \'' . ItemTransactionUniqueCode::PURCHASE_RETURN->value . '\',
+                    \'' . ItemTransactionUniqueCode::SALE->value . '\',
+                    \'' . ItemTransactionUniqueCode::STOCK_TRANSFER->value . '\',
+                    \'' . ItemTransactionUniqueCode::STOCK_ADJUSTMENT_DECREASE->value . '\'
+                ) THEN
+                    CASE
+                        WHEN items.base_unit_id = item_transactions.unit_id THEN -quantity
+                        WHEN items.secondary_unit_id = item_transactions.unit_id THEN -quantity / items.conversion_rate
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ), 0) AS item_general_warehouse_stock,
+        item_id,
+        warehouse_id
+    ')
             ->join('items', 'item_transactions.item_id', '=', 'items.id')
             ->whereNotIn('unique_code', [
                 ItemTransactionUniqueCode::PURCHASE_ORDER->value,
@@ -576,24 +585,29 @@ class ItemTransactionService
             ->groupBy('item_id', 'warehouse_id')
             ->get();
 
+        // Delete old records
         ItemGeneralQuantity::where('item_id', $itemGeneralMasterId)->delete();
 
         if ($itemTransactions->count() > 0) {
+            // Group by warehouse
             $itemGeneralTransactions = $itemTransactions->groupBy('warehouse_id')->toArray();
 
             foreach ($itemGeneralTransactions as $warehouseId => $generalransactions) {
                 foreach ($generalransactions as $generalransaction) {
+                    // Prepare record
                     $readyData = [
-                        'item_id'      => $generalransaction['item_id'],
+                        'item_id' => $generalransaction['item_id'],
                         'warehouse_id' => $warehouseId,
-                        'quantity'     => $generalransaction['item_general_warehouse_stock'],
+                        'quantity' => $generalransaction['item_general_warehouse_stock'],
                     ];
 
+                    // Insert into table
                     $created = ItemGeneralQuantity::create($readyData);
                     if (!$created) {
                         throw new \Exception('Failed to record General Items Warehouse Wise!');
                     }
 
+                    // Update item master stock
                     $updateStock = $this->itemService->updateItemStock($itemGeneralMasterId);
                     if (!$updateStock) {
                         throw new \Exception('Failed to update Item Master Stock!!');
@@ -601,6 +615,7 @@ class ItemTransactionService
                 }
             }
         }
+
         return true;
     }
 

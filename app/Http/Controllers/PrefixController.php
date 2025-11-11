@@ -30,6 +30,7 @@ class PrefixController extends Controller
         $settings->sale = $request->sale;
         $settings->sale_return = $request->sale_return;
         $settings->stock_transfer = $request->stock_transfer;
+        $settings->stock_adjustment = $request->stock_adjustment;
         $settings->quotation = $request->quotation;
 
         $settings->save();

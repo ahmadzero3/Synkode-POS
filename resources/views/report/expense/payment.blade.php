@@ -87,7 +87,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="expenseReport">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('app.date') }}</th>
                                                         <th>{{ __('expense.code') }}</th>

@@ -5,23 +5,22 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Database\Seeders\Updates\Version12Seeder;
-use Database\Seeders\Updates\Version131Seeder;
-use Database\Seeders\Updates\Version132Seeder;
-use Database\Seeders\Updates\Version133Seeder;
-use Database\Seeders\Updates\Version134Seeder;
-use Database\Seeders\Updates\Version141Seeder;
-use Database\Seeders\Updates\Version142Seeder;
-use Database\Seeders\Updates\Version143Seeder;
-use Database\Seeders\Updates\Version144Seeder;
-use Database\Seeders\Updates\Version145Seeder;
-use Database\Seeders\Updates\Version146Seeder;
-use Database\Seeders\Updates\Version147Seeder;
-use Database\Seeders\Updates\Version148Seeder;
-use Database\Seeders\Updates\Version149Seeder;
-use Database\Seeders\Updates\Version21Seeder;
-use Database\Seeders\Updates\Version22Seeder;
-use Database\Seeders\Updates\Version23Seeder;
+use Database\Seeders\Updates\{
+    Version132Seeder,
+    Version133Seeder,
+    Version141Seeder,
+    Version142Seeder,
+    Version144Seeder,
+    Version145Seeder,
+    Version147Seeder,
+    Version148Seeder,
+    Version21Seeder,
+    Version23Seeder,
+    Version231Seeder,
+    Version232Seeder,
+    Version233Seeder,
+    Version235Seeder,
+};
 
 class VersionSeeder extends Seeder
 {
@@ -31,7 +30,7 @@ class VersionSeeder extends Seeder
     public function run(): void
     {
 
-       $newVersionArray = [
+        $newVersionArray = [
             '1.0',  //1.0, Date: 24-10-2024
             '1.1',  //1.0, Date: 28-11-2024
             '1.1.1',  //1.0, Date: 30-11-2024
@@ -55,14 +54,22 @@ class VersionSeeder extends Seeder
             '2.0',  //2.0, Date: 21-02-2025
             '2.1',  //2.1, Date: 25-02-2025
             '2.2',  //2.2, Date: 06-03-2025
-            env('APP_VERSION'),  //2.3, Date: 08-03-2025
+            '2.3',  //2.3, Date: 08-03-2025
+            '2.3.1',  //2.3.1, Date: 08-03-2025
+            '2.3.2',  //2.3.2, Date: 08-03-2025
+            '2.3.3',  //2.3.3, Date: 08-03-2025
+            '2.3.4',  //2.3.4, Date: 08-03-2025
+            '2.3.5',  //2.3.5, Date: 07-05-2025
+            '2.3.6',  //2.3.6, Date: 26-05-2025
+            '2.4',  //2.4, Date: 03-07-2025
+            env('APP_VERSION'),  //2.5, Date: 03-08-2025
         ];
 
         $existingVersions = DB::table('versions')->pluck('version')->toArray();
 
         foreach ($newVersionArray as $version) {
             //validate is the version exist in it?
-            if(!in_array($version, $existingVersions)){
+            if (!in_array($version, $existingVersions)) {
                 DB::table('versions')->insert([
                     'version' => $version,
                     'created_at' => now(),
@@ -79,74 +86,24 @@ class VersionSeeder extends Seeder
 
     public function updateDatabaseTransaction($version)
     {
-        if($version == '1.2'){
-            $adminSeeder = new Version12Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.3.1'){
-            $adminSeeder = new Version131Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.3.2'){
-            $adminSeeder = new Version132Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.3.3'){
-            $adminSeeder = new Version133Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.3.4'){
-            $adminSeeder = new Version134Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.1'){
-            $adminSeeder = new Version141Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.2'){
-            $adminSeeder = new Version142Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.3'){
-            $adminSeeder = new Version143Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.4'){
-            $adminSeeder = new Version144Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.5'){
-            $adminSeeder = new Version145Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.6'){
-            $adminSeeder = new Version146Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.7'){
-            $adminSeeder = new Version147Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.8'){
-            $adminSeeder = new Version148Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '1.4.9'){
-            $adminSeeder = new Version149Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '2.1'){
-            $adminSeeder = new Version21Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '2.2'){
-            $adminSeeder = new Version22Seeder();
-            $adminSeeder->run();
-        }
-        if($version == '2.3'){
-            $adminSeeder = new Version23Seeder();
-            $adminSeeder->run();
+        $seeders = [
+            '1.3.2' => Version132Seeder::class,
+            '1.3.3' => Version133Seeder::class,
+            '1.4.1' => Version141Seeder::class,
+            '1.4.2' => Version142Seeder::class,
+            '1.4.4' => Version144Seeder::class,
+            '1.4.5' => Version145Seeder::class,
+            '1.4.7' => Version147Seeder::class,
+            '1.4.8' => Version148Seeder::class,
+            '2.1'   => Version21Seeder::class,
+            '2.3'   => Version23Seeder::class,
+            '2.3.5' => Version235Seeder::class,
+
+        ];
+
+        if (isset($seeders[$version])) {
+            $seeder = new $seeders[$version]();
+            $seeder->run();
         }
     }
-
 }

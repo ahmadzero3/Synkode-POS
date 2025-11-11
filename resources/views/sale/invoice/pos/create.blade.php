@@ -15,20 +15,28 @@
                 <h6 class="logo-text">{{ app('site')['name'] }}</h6>
             </a>
 
+            @if(!empty($data['register_display']))
+                <span class="ms-2 text-primary fw-semibold">
+                    {{ $data['register_display'] }}
+                </span>
+            @endif
+
             <audio id="pos-sound" src="{{ asset('assets/sound/pos-sound.mp3') }}"></audio>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarSupportedContent1" aria-controls="navbarSupportedContent1" aria-expanded="false"
-                aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent1"
+                aria-controls="navbarSupportedContent1" aria-expanded="false" aria-label="Toggle navigation"> <span
+                    class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent1">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
 
-                    <li class="nav-item nav-item-close-cash">
-                        <a class="nav-link" href="{{ route('transaction.close-cash') }}" target="_blank">
-                            <i class='bx bx-wallet me-1'></i>{{ __('app.close_cash') }}
-                        </a>
-                    </li>
+                    @can('transaction.cash.close')
+                        <li class="nav-item nav-item-close-cash">
+                            <a class="nav-link" href="{{ route('transaction.close-cash') }}" target="_blank">
+                                <i class='bx bx-wallet me-1'></i>{{ __('app.close_cash') }}
+                            </a>
+                        </li>
+                    @endcan
 
                     <!-- Calculator Popup -->
                     <div id="calculator-popup" class="calculator-popup">
@@ -193,8 +201,8 @@
                             <div class="row row-cols-2 row-cols-md-4 row-cols-sm-4 row-cols-xs-4 g-4 p-2" id="itemsGrid">
                             </div>
                             <div class="text-center my-4">
-                                <button id="loadMoreBtn" class="btn btn-sm btn-outline-primary px-5 rounded-1"
-                                    type="button" tabindex="0">Load More</button>
+                                <button id="loadMoreBtn" class="btn btn-sm btn-outline-primary px-5 rounded-1" type="button"
+                                    tabindex="0">Load More</button>
                             </div>
                         </div>
                     </div>
@@ -203,8 +211,8 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
-                                    <x-input type="text" name="prefix_code" :required="true"
-                                        placeholder="Prefix Code" value="{{ $data['prefix_code'] }}" readonly />
+                                    <x-input type="text" name="prefix_code" :required="true" placeholder="Prefix Code"
+                                        value="{{ $data['prefix_code'] }}" readonly />
                                     <span class="input-group-text">#</span>
                                     <x-input type="text" name="count_id" :required="true" placeholder="Serial Number"
                                         value="{{ $data['count_id'] }}" readonly />
@@ -258,12 +266,13 @@
                                                     <tr class="text-uppercase">
                                                         <th scope="col">{{ __('item.item') }}</th>
                                                         <th scope="col" class="d-none serial-column">
-                                                            {{ __('item.serial') }}</th>
+                                                            {{ __('item.serial') }}
+                                                        </th>
                                                         <!---<th scope="col" class="{{ !app('company')['enable_batch_tracking'] ? 'd-none' : '' }}">{{ __('item.batch_no') }}</th>
-                                                                                                <th scope="col" class="{{ !app('company')['enable_mfg_date'] ? 'd-none' : '' }}">{{ __('item.mfg_date') }}</th>
-                                                                                                <th scope="col" class="{{ !app('company')['enable_exp_date'] ? 'd-none' : '' }}">{{ __('item.exp_date') }}</th>
-                                                                                                <th scope="col" class="{{ !app('company')['enable_model'] ? 'd-none' : '' }}">{{ __('item.model_no') }}</th>
-                                                                                                <th scope="col" class="{{ !app('company')['show_mrp'] ? 'd-none' : '' }}">{{ __('item.mrp') }}</th>--->
+                                                                                                                            <th scope="col" class="{{ !app('company')['enable_mfg_date'] ? 'd-none' : '' }}">{{ __('item.mfg_date') }}</th>
+                                                                                                                            <th scope="col" class="{{ !app('company')['enable_exp_date'] ? 'd-none' : '' }}">{{ __('item.exp_date') }}</th>
+                                                                                                                            <th scope="col" class="{{ !app('company')['enable_model'] ? 'd-none' : '' }}">{{ __('item.model_no') }}</th>
+                                                                                                                            <th scope="col" class="{{ !app('company')['show_mrp'] ? 'd-none' : '' }}">{{ __('item.mrp') }}</th>--->
                                                         <th scope="col"
                                                             class="{{ !app('company')['enable_color'] ? 'd-none' : '' }}">
                                                             {{ __('item.color') }}</th>
@@ -285,8 +294,7 @@
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td colspan="9"
-                                                            class="text-center fw-light fst-italic default-row">
+                                                        <td colspan="9" class="text-center fw-light fst-italic default-row">
                                                             No items are added yet !!
                                                         </td>
                                                     </tr>
@@ -301,8 +309,8 @@
                                     <x-textarea name='note' value='' />
                                 </div>
                                 <div class="row mt-3">
-                                    <div class="col-md-3 col-sm-6"><strong>Total Quantity:</strong> <span
-                                            id="totalQuantity" class="sum_of_quantity">0</span></div>
+                                    <div class="col-md-3 col-sm-6"><strong>Total Quantity:</strong> <span id="totalQuantity"
+                                            class="sum_of_quantity">0</span></div>
                                     <div class="col-md-3 col-sm-6"><strong>Discount:</strong> <span id="totalDiscount"
                                             class="sum_of_discount">0.00</span></div>
                                     <div class="col-md-3 col-sm-6"><strong>Tax:</strong> <span id="totalTax"
@@ -324,8 +332,8 @@
                                             </td>
                                             <td class="w-50">
                                                 <x-input type="text" additionalClasses="text-end cu_numeric"
-                                                    name="payment_amount[0]" :required="false"
-                                                    placeholder="Payment Amount" value="0" />
+                                                    name="payment_amount[0]" :required="false" placeholder="Payment Amount"
+                                                    value="0" />
                                                 <input type="hidden" name="payment_note[0]" value="">
                                             </td>
                                         </tr>
@@ -338,16 +346,16 @@
                                             </td>
                                             <td class="w-50">
                                                 <x-input type="text" additionalClasses="text-end cu_numeric"
-                                                    name="payment_amount[1]" :required="false"
-                                                    placeholder="Payment Amount" value="0" />
+                                                    name="payment_amount[1]" :required="false" placeholder="Payment Amount"
+                                                    value="0" />
                                                 <input type="hidden" name="payment_note[1]" value="">
                                             </td>
                                         </tr>
 
                                         <tr>
                                             <td class="text-end">
-                                                <label class="fw-bold"
-                                                    for="round_off_checkbox">{{ __('payment.balance') }}</label>
+                                                <label class="fw-bold" for="round_off_checkbox">{{ __('payment.balance')
+                                                    }}</label>
                                             </td>
                                             <td class="w-50 text-end">
                                                 <label class="fw-bold balance" for="round_off_checkbox">0</label>
@@ -355,8 +363,8 @@
                                         </tr>
                                         <tr class="change_return_parent">
                                             <td class="text-end">
-                                                <label class="fw-bold align-middle "
-                                                    for="change_return">{{ __('payment.change_return') }}</label>
+                                                <label class="fw-bold align-middle " for="change_return">{{
+                                                    __('payment.change_return') }}</label>
                                             </td>
                                             <td class="w-50 text-end">
                                                 <label class="fw-bold change_return text-danger fs-2"
@@ -383,43 +391,41 @@
                                         <tr>
                                             <td class="w-50">
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        id="round_off_checkbox">
+                                                    <input class="form-check-input" type="checkbox" id="round_off_checkbox">
                                                     <label class="form-check-label fw-bold cursor-pointer"
                                                         for="round_off_checkbox">{{ __('app.round_off') }}</label>
                                                 </div>
                                             </td>
                                             <td class="w-50">
                                                 <x-input type="text" additionalClasses="text-end cu_numeric round_off "
-                                                    name="round_off" :required="false" placeholder="Round-Off"
-                                                    value="0" />
+                                                    name="round_off" :required="false" placeholder="Round-Off" value="0" />
                                             </td>
                                         </tr>
                                         <tr>
                                             <td><span class="fw-bold">{{ __('app.grand_total') }}</span></td>
                                             <td>
-                                                <x-input type="text" additionalClasses="text-end grand_total"
-                                                    readonly=true name="grand_total" :required="true"
-                                                    placeholder="Round-Off" value="0" />
+                                                <x-input type="text" additionalClasses="text-end grand_total" readonly=true
+                                                    name="grand_total" :required="true" placeholder="Round-Off" value="0" />
                                             </td>
                                         </tr>
                                         @if (app('company')['is_enable_secondary_currency'])
-                                            <tr>
-                                                <td>
-                                                    <div class="input-group mb-3">
-                                                        <x-dropdown-currency selected="" name='invoice_currency_id' />
-                                                        <x-input type="text" name="exchange_rate" :required="false"
-                                                            additionalClasses='cu_numeric' value="0" />
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <x-input type="text" additionalClasses="text-end converted_amount"
-                                                        readonly=true :required="true" placeholder="Converted Amount"
-                                                        value="0" />
-                                                    <span class="fw-bold exchange-lang text-end"
-                                                        data-exchange-lang="{{ __('currency.converted_to') }}">{{ __('currency.exchange') }}</span>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="input-group mb-3">
+                                                    <x-dropdown-currency selected="" name='invoice_currency_id' />
+                                                    <x-input type="text" name="exchange_rate" :required="false"
+                                                        additionalClasses='cu_numeric' value="0" />
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <x-input type="text" additionalClasses="text-end converted_amount"
+                                                    readonly=true :required="true" placeholder="Converted Amount"
+                                                    value="0" />
+                                                <span class="fw-bold exchange-lang text-end"
+                                                    data-exchange-lang="{{ __('currency.converted_to') }}">{{
+                                                    __('currency.exchange') }}</span>
+                                            </td>
+                                        </tr>
                                         @endif
                                     </tbody>
                                 </table>
@@ -434,13 +440,11 @@
         </div>
         <div class="{{ $themeBgColor }} p-2 fixed-bottom border-top shadow">
             <div class="container-fluid d-flex justify-content-end gap-3">
-                <x-anchor-tag href="{{ route('dashboard') }}" text="{{ __('app.close') }}"
-                    class="btn btn-light px-4" />
-                <x-anchor-tag href="{{ route('pos.create') }}" text="{{ __('app.new') }}"
-                    class="btn btn-secondary px-4" />
+                <x-anchor-tag href="{{ route('dashboard') }}" text="{{ __('app.close') }}" class="btn btn-light px-4" />
+                <x-anchor-tag href="{{ route('pos.create') }}" text="{{ __('app.new') }}" class="btn btn-secondary px-4" />
                 <button type="button" class="btn btn-warning" id="hold_button">Hold</button>
-                <button type="button" class="btn btn-success"
-                    id="submit_form_with_print">{{ __('app.save_and_print') }}</button>
+                <button type="button" class="btn btn-success" id="submit_form_with_print">{{ __('app.save_and_print')
+                    }}</button>
                 <!---<button type="button" class="btn btn-primary" id="submit_form_with_print">{{ __('app.save_and_print') }}</button>--->
                 <!---<button type="button" class="btn btn-success" id="submit_form">{{ __('app.save') }}</button>--->
             </div>
@@ -475,6 +479,7 @@
         window.toggleSwitchActive = '{{ $toggleSwitch }}' === 'active';
         window.trendingIds = @json($trendingIds);
         window.customerDisplayRoute = "{{ route('sale.invoice.customer-display') }}";
+        window.allowNegativeStockBilling = {{ app('company')['allow_negative_stock_billing'] ? 'true' : 'false' }};
     </script>
 
     <script src="{{ versionedAsset('custom/js/sale/pos-item-scroller.js') }}"></script>

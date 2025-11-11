@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services\Reports\ProfitAndLoss;
 
 use App\Models\Items\ItemTransaction;
@@ -8,7 +9,8 @@ use App\Models\Sale\Sale;
 use App\Models\User;
 use App\Services\ItemTransactionService;
 
-class SaleProfitService{
+class SaleProfitService
+{
 
     private $paymentTransactionService;
 
@@ -53,7 +55,6 @@ class SaleProfitService{
                 $totalAvgSalePrice += ($saleData['average_sale_price'] ?? 0) * $quantity;
                 $totalSaleTaxAmount += $item['tax_amount'];
             }
-
         }
 
 
@@ -67,7 +68,8 @@ class SaleProfitService{
         ];
     }
 
-    public function saleTotalAmount($fromDate, $toDate, $warehouseId){
+    public function saleTotalAmount($fromDate, $toDate, $warehouseId)
+    {
 
         //If warehouseId is not provided, fetch warehouses accessible to the user
         $warehouseIds = $warehouseId ? [$warehouseId] : User::find(auth()->id())->getAccessibleWarehouses()->pluck('id');
@@ -77,20 +79,21 @@ class SaleProfitService{
             ->whereBetween('sale_date', [$fromDate, $toDate])
             ->get();
 
-        if($sales->isNotEmpty()){
+        if ($sales->isNotEmpty()) {
             $totalDiscount = $sales->flatMap->itemTransaction->sum('discount_amount') + $sales->sum('round_off');
             $totalNetPrice = $sales->flatMap->itemTransaction->sum('total');
             $totalTax = $sales->flatMap->itemTransaction->sum('tax_amount');
         }
 
         return [
-                'totalDiscount' => $totalDiscount ?? 0,
-                'totalNetPrice' => $totalNetPrice ?? 0,
-                'totalTax' => $totalTax ?? 0,
+            'totalDiscount' => $totalDiscount ?? 0,
+            'totalNetPrice' => $totalNetPrice ?? 0,
+            'totalTax' => $totalTax ?? 0,
         ];
     }
 
-    public function getItemPurchasePriceFromPurchaseEntry($newSaleItemsCollection){
+    public function getItemPurchasePriceFromPurchaseEntry($newSaleItemsCollection)
+    {
         // Ensure morph map keys are defined
         $this->paymentTransactionService->usedTransactionTypeValue();
 
@@ -114,8 +117,7 @@ class SaleProfitService{
                         $purchasePrice = $transaction->unit_price;
 
                         $purchaseReturn = ItemTransaction::where('transaction_type', 'Purchase Return')->where('item_id', $transaction->item_id)->get();
-                        if($purchaseReturn->count()>0){
-
+                        if ($purchaseReturn->count() > 0) {
                         }
 
                         if ($transaction->quantity > 0) {
@@ -129,8 +131,6 @@ class SaleProfitService{
                                     //'remainingQuantity' => $remainingQuantity - $transaction->quantity,
                                 ];
                                 $remainingQuantity -= $transaction->quantity;
-
-
                             } else {
 
                                 $purchasePriceData[] = [
@@ -143,15 +143,12 @@ class SaleProfitService{
                                 $transaction->quantity -= $remainingQuantity;
 
                                 $remainingQuantity = 0;
-
                             }
                         }
-
-
-                    }// foreach
+                    } // foreach
                 });
 
-            $saleItems['remaining_quantity'] = $purchasePriceData??$saleItems['sale_qty_minus_opening_qty'];
+            $saleItems['remaining_quantity'] = $purchasePriceData ?? $saleItems['sale_qty_minus_opening_qty'];
 
             // After processing, you can calculate profit and loss based on $purchasePriceData
             $totalCost = is_array($purchasePriceData) ? array_sum(array_column($purchasePriceData, 'total')) : 0; // Total cost of adjustments
@@ -159,9 +156,8 @@ class SaleProfitService{
             $saleItems['remaining_quantity_total_purchase_price'] = $totalCost;
 
             return $saleItems;
-        });//transform end
+        }); //transform end
 
         return $finalSaleItemsCollection;
     }
-
 }

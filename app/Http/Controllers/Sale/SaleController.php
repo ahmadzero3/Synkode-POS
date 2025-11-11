@@ -96,14 +96,29 @@ class SaleController extends Controller
     public function create(): View
     {
         $prefix = Prefix::findOrNew($this->companyId);
-        $lastCountId = $this->getLastCountId();
+
+        $user = auth()->user();
+        $register = \App\Models\Register::where('user_id', $user->id)->first();
+
+        if ($register) {
+            // Cashier → use his register counter
+            $countId = $register->last_count_id + 1;
+        } else {
+            // Non-cashier → use global counter
+            $lastGlobal = Sale::max('last_global_count_id') ?? 0;
+            $countId = $lastGlobal + 1;
+        }
+
         $selectedPaymentTypesArray = json_encode($this->paymentTypeService->selectedPaymentTypesArray());
+
         $data = [
             'prefix_code' => $prefix->sale,
-            'count_id' => ($lastCountId + 1),
+            'count_id' => $countId,
         ];
+
         return view('sale.invoice.create', compact('data', 'selectedPaymentTypesArray'));
     }
+
     /**
      * Create a POS sale.
      *
@@ -112,15 +127,68 @@ class SaleController extends Controller
     public function posCreate(): View
     {
         $prefix = Prefix::findOrNew($this->companyId);
-        $lastCountId = $this->getLastCountId();
+
+        $user = auth()->user();
+        $register = \App\Models\Register::where('user_id', $user->id)->first();
+
+        if ($register) {
+            // Cashier → use his register counter
+            $countId = $register->last_count_id + 1;
+        } else {
+            // Non-cashier → use global counter
+            $lastGlobal = Sale::max('last_global_count_id') ?? 0;
+            $countId = $lastGlobal + 1;
+        }
+
         $selectedPaymentTypesArray = json_encode($this->paymentTypeService->selectedPaymentTypesArray());
         $pendingInvoicesCount = Sale::where('invoice_status', 'pending')->count();
+
+        $displayUserName = $user->username ?: ($user->first_name ?? '');
+        $registerDisplayName = $register
+            ? $register->name . ' - (' . $displayUserName . ')'
+            : null;
+
         $data = [
             'prefix_code' => $prefix->sale,
-            'count_id' => ($lastCountId + 1), // This line stays the same
+            'count_id' => $countId,
             'pending_invoices_count' => $pendingInvoicesCount,
+            'register_display' => $registerDisplayName, // clean value for Blade
         ];
+
         return view('sale.invoice.pos.create', compact('data', 'selectedPaymentTypesArray'));
+    }
+
+    public function apiShow($id)
+    {
+        try {
+            $sale = \App\Models\Sale\Sale::find($id);
+
+            if (!$sale) {
+                return response()->json(['success' => false, 'message' => 'Sale not found'], 404);
+            }
+
+            $effectiveCountId = $sale->count_id > 0 ? $sale->count_id : $sale->last_global_count_id;
+
+            return response()->json([
+                'success' => true,
+                'sale' => [
+                    'id' => $sale->id,
+                    'count_id' => $effectiveCountId,
+                    'prefix_code' => $sale->prefix_code,
+                    'invoice_status' => $sale->invoice_status,
+                    'sale_date' => $sale->sale_date,
+                    'reference_no' => $sale->reference_no,
+                    'note' => $sale->note,
+                    'grand_total' => $sale->grand_total,
+                    'paid_amount' => $sale->paid_amount,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -128,16 +196,7 @@ class SaleController extends Controller
      * */
     public function getLastCountId()
     {
-        $lastCloseCash = DB::table('close_cash')->latest('created_at')->first();
-        $lastSale = Sale::latest('created_at')->first();
-
-        // If cash was closed after the last sale, reset counter to 0
-        if ($lastCloseCash && $lastSale && $lastCloseCash->created_at > $lastSale->created_at) {
-            return 0; // Next invoice: 0 + 1 = 1
-        }
-
-        // Otherwise, continue with the existing counter logic
-        return Sale::max('count_id') ?? 0;
+        return Sale::select('count_id')->orderBy('id', 'desc')->first()?->count_id ?? 0;
     }
 
     /**
@@ -155,7 +214,7 @@ class SaleController extends Controller
      *
      * @return \Illuminate\Http\View | RedirectResponse
      */
-    public function convertQuotationToSale($id, $convertingFrom = 'Quotation'): View | RedirectResponse
+    public function convertQuotationToSale($id, $convertingFrom = 'Quotation'): View|RedirectResponse
     {
         return $this->convertToSale($id, $convertingFrom);
     }
@@ -165,7 +224,7 @@ class SaleController extends Controller
      * @param int $id The ID of the expense to edit.
      * @return \Illuminate\View\View
      */
-    public function convertToSale($id, $convertingFrom = 'Sale Order'): View | RedirectResponse
+    public function convertToSale($id, $convertingFrom = 'Sale Order'): View|RedirectResponse
     {
 
         if ($convertingFrom == 'Sale Order') {
@@ -175,10 +234,12 @@ class SaleController extends Controller
             $convertedBill = Sale::where('sale_order_id', $id)->first();
 
             if ($convertedBill) {
-                session(['record' => [
-                    'type' => 'success',
-                    'status' => __('sale.already_converted'), //Save or update
-                ]]);
+                session([
+                    'record' => [
+                        'type' => 'success',
+                        'status' => __('sale.already_converted'), //Save or update
+                    ]
+                ]);
                 //Already Converted, Redirect it.
                 return redirect()->route('sale.invoice.details', ['id' => $convertedBill->id]);
             }
@@ -199,10 +260,12 @@ class SaleController extends Controller
             $convertedQuotation = Sale::where('quotation_id', $id)->first();
 
             if ($convertedQuotation) {
-                session(['record' => [
-                    'type' => 'success',
-                    'status' => __('sale.already_converted'), //Save or update
-                ]]);
+                session([
+                    'record' => [
+                        'type' => 'success',
+                        'status' => __('sale.already_converted'), //Save or update
+                    ]
+                ]);
                 //Already Converted, Redirect it.
                 return redirect()->route('sale.invoice.details', ['id' => $convertedQuotation->id]);
             }
@@ -499,11 +562,12 @@ class SaleController extends Controller
     public function store(SaleRequest $request): JsonResponse
     {
         try {
-
             DB::beginTransaction();
-            // Get the validated data from the expenseRequest
-            $validatedData = $request->validated();
 
+            $validatedData = $request->validated();
+            $saleId = $request->input('sale_id');
+
+            // Payment Type
             $paymentTypeId = $request->payment_type_id[0] ?? null;
             $paymentTypeName = null;
             if ($paymentTypeId) {
@@ -511,195 +575,134 @@ class SaleController extends Controller
                 $paymentTypeName = $paymentType ? $paymentType->name : null;
             }
 
-            // Calculate change return
+            // Payment calculations
             $changeReturn = 0;
             $totalPayment = array_sum($request->payment_amount);
             if ($totalPayment > $request->grand_total) {
                 $changeReturn = $totalPayment - $request->grand_total;
             }
-
-            // Calculate balance
             $balance = $request->grand_total - $totalPayment;
 
-            // Check for pending invoices
+            // Prevent too many pending invoices
             $pendingCount = Sale::where('invoice_status', 'pending')->count();
-            if ($pendingCount >= 10 && ($request->invoice_status === 'pending' || (!isset($request->invoice_status) && (!isset($validatedData['invoice_status']) || $validatedData['invoice_status'] === 'pending')))) {
+            if ($pendingCount >= 10 && $request->invoice_status === 'pending') {
                 return response()->json([
                     'success' => false,
                     'message' => 'You Cannot Save this Invoice , Check Pending Invoices !!'
                 ], 422);
             }
 
+            $user = auth()->user();
+
+            // 🔹 STEP 1: Decide which counter to use
+            $register = \App\Models\Register::where('user_id', $user->id)->lockForUpdate()->first();
+
+            if ($register) {
+                // Cashier → Use register counter
+                $newCountId = $register->last_count_id + 1;
+                $newGlobalCountId = 0;
+            } else {
+                // Non-cashier → Use global counter from sales table
+                $lastGlobal = Sale::max('last_global_count_id') ?? 0;
+                $newCountId = 0;
+                $newGlobalCountId = $lastGlobal + 1;
+            }
+
+            // ✅ CREATE
             if ($request->operation == 'save' || $request->operation == 'convert') {
-                // Create a new sale record using Eloquent and save it
                 $newSale = new Sale($validatedData);
                 $newSale->invoice_status = $request->input('invoice_status', 'pending');
                 $newSale->payment_type = $paymentTypeName;
                 $newSale->payment_amount = $request->payment_amount[0] ?? 0;
                 $newSale->change_return = $changeReturn;
                 $newSale->balance = $balance;
-                $newSale->save();
 
-                $request->request->add(['sale_id' => $newSale->id]);
-            } else {
+                // Record who made the invoice
+                $newSale->created_by = $user->id;
+                // ★ NEW: also write to user_id so relations & username work everywhere
+                $newSale->user_id = $user->id;
+
+                // 🔹 Assign correct counter
+                $newSale->count_id = $newCountId;
+                $newSale->last_global_count_id = $newGlobalCountId;
+
+                $newSale->save();
+                $saleId = $newSale->id;
+
+                // 🔹 Update only registers if cashier
+                if ($register) {
+                    $register->last_count_id = $newCountId;
+                    $register->save();
+                }
+            } elseif ($request->operation == 'update' && $saleId) {
+                $newSale = Sale::findOrFail($saleId);
+
                 $fillableColumns = [
-                    'party_id'              => $validatedData['party_id'],
-                    'sale_date'             => $validatedData['sale_date'],
-                    'reference_no'          => $validatedData['reference_no'],
-                    'prefix_code'           => $validatedData['prefix_code'],
-                    'count_id'              => $validatedData['count_id'],
-                    'sale_code'             => $validatedData['sale_code'],
-                    'note'                  => $validatedData['note'],
-                    'round_off'             => $validatedData['round_off'],
-                    'grand_total'           => $validatedData['grand_total'],
-                    'state_id'              => $validatedData['state_id'],
-                    'currency_id'           => $validatedData['currency_id'],
-                    'exchange_rate'         => $validatedData['exchange_rate'],
-                    'payment_type'          => $paymentTypeName,
-                    'payment_amount'        => $request->payment_amount[0] ?? 0,
-                    'change_return'         => $changeReturn,
-                    'balance'               => $balance,
+                    'party_id' => $validatedData['party_id'] ?? $newSale->party_id,
+                    'sale_date' => $validatedData['sale_date'] ?? $newSale->sale_date,
+                    'reference_no' => $validatedData['reference_no'] ?? $newSale->reference_no,
+                    'prefix_code' => $validatedData['prefix_code'] ?? $newSale->prefix_code,
+                    'count_id' => $validatedData['count_id'] ?? $newSale->count_id,
+                    'last_global_count_id' => $validatedData['last_global_count_id'] ?? $newSale->last_global_count_id,
+                    'sale_code' => $validatedData['sale_code'] ?? $newSale->sale_code,
+                    'note' => $validatedData['note'] ?? $newSale->note,
+                    'round_off' => $validatedData['round_off'] ?? $newSale->round_off,
+                    'grand_total' => $validatedData['grand_total'] ?? $newSale->grand_total,
+                    'state_id' => $validatedData['state_id'] ?? $newSale->state_id,
+                    'currency_id' => $validatedData['currency_id'] ?? $newSale->currency_id,
+                    'exchange_rate' => $validatedData['exchange_rate'] ?? $newSale->exchange_rate,
+                    'payment_type' => $paymentTypeName,
+                    'payment_amount' => $request->payment_amount[0] ?? 0,
+                    'change_return' => $changeReturn,
+                    'balance' => $balance,
+                    'invoice_status' => $request->input('invoice_status', $newSale->invoice_status),
                 ];
 
-                $newSale = Sale::findOrFail($validatedData['sale_id']);
                 $newSale->update($fillableColumns);
 
-                /**
-                 * Before deleting ItemTransaction data take the
-                 * old data of the item_serial_master_id
-                 * to update the item_serial_quantity
-                 * */
+                // Reset items/payments
                 $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($newSale);
-
                 $newSale->itemTransaction()->delete();
-                //$newSale->accountTransaction()->delete();
-
-                //Sale Account Update
                 foreach ($newSale->accountTransaction as $saleAccount) {
-                    //get account if of model with tax accounts
                     $saleAccountId = $saleAccount->account_id;
-
-                    //Delete sale and tax account
                     $saleAccount->delete();
-
-                    //Update  account
                     $this->accountTransactionService->calculateAccounts($saleAccountId);
-                } //sale account
-
-
-                // Check if paymentTransactions exist
-                // $paymentTransactions = $newSale->paymentTransaction;
-                // if ($paymentTransactions->isNotEmpty()) {
-                //     foreach ($paymentTransactions as $paymentTransaction) {
-                //         $accountTransactions = $paymentTransaction->accountTransaction;
-                //         if ($accountTransactions->isNotEmpty()) {
-                //             foreach ($accountTransactions as $accountTransaction) {
-                //                 //Sale Account Update
-                //                 $accountId = $accountTransaction->account_id;
-                //                 // Do something with the individual accountTransaction
-                //                 $accountTransaction->delete(); // Or any other operation
-
-                //                 $this->accountTransactionService->calculateAccounts($accountId);
-                //             }
-                //         }
-                //     }
-                // }
-
-                // $newSale->paymentTransaction()->delete();
+                }
+                foreach ($newSale->paymentTransaction as $payment) {
+                    $payment->delete();
+                }
             }
 
-            $request->request->add(['modelName' => $newSale]);
-
-            /**
-             * Save Table Items in Sale Items Table
-             * */
+            // Save items & payments
+            $request->merge(['sale_id' => $saleId, 'modelName' => $newSale]);
             $SaleItemsArray = $this->saveSaleItems($request);
-            if (!$SaleItemsArray['status']) {
+            if (!$SaleItemsArray['status'])
                 throw new \Exception($SaleItemsArray['message']);
-            }
-
-            /**
-             * Save Expense Payment Records
-             * */
             $salePaymentsArray = $this->saveSalePayments($request);
-            if (!$salePaymentsArray['status']) {
+            if (!$salePaymentsArray['status'])
                 throw new \Exception($salePaymentsArray['message']);
-            }
 
-            /**
-             * Payment Should not be less than 0
-             * */
+            // Update paid/balance
             $paidAmount = $newSale->refresh('paymentTransaction')->paymentTransaction->sum('amount');
-            if ($paidAmount < 0) {
-                throw new \Exception(__('payment.paid_amount_should_not_be_less_than_zero'));
+            $newSale->paid_amount = $paidAmount;
+            $newSale->balance = $newSale->grand_total - $paidAmount;
+            if ($request->input('invoice_status') === 'finished') {
+                $newSale->invoice_status = 'finished';
             }
-
-            /**
-             * Paid amount should not be greater than grand total
-             * */
-            if ($paidAmount > $newSale->grand_total) {
-                throw new \Exception(__('payment.payment_should_not_be_greater_than_grand_total') . "<br>Paid Amount : " . $this->formatWithPrecision($paidAmount) . "<br>Grand Total : " . $this->formatWithPrecision($newSale->grand_total) . "<br>Difference : " . $this->formatWithPrecision($paidAmount - $newSale->grand_total));
-            }
-
-            /**
-             * Update Sale Model
-             * Total Paid Amount and Balance
-             * */
-            if (!$this->paymentTransactionService->updateTotalPaidAmountInModel($request->modelName)) {
-                throw new \Exception(__('payment.failed_to_update_paid_amount'));
-            }
-
-            // Refresh the model to get updated paid_amount
-            $newSale->refresh();
-
-            // Recalculate balance based on actual paid amount
-            $actualBalance = $newSale->grand_total - $newSale->paid_amount;
-            $newSale->balance = $actualBalance;
             $newSale->save();
 
-            /**
-             * Update Account Transaction entry
-             * Call Services
-             * @return boolean
-             * */
-            // $accountTransactionStatus = $this->accountTransactionService->saleAccountTransaction($request->modelName);
-            // if(!$accountTransactionStatus){
-            //     throw new \Exception(__('payment.failed_to_update_account'));
-            // }
-
-            /**
-             * Credit Limit Check
-             * */
-            if ($this->partyService->limitThePartyCreditLimit($validatedData['party_id'])) {
-                //
-            }
-
-            /**
-             * UPDATE HISTORY DATA
-             * LIKE: ITEM SERIAL NUMBER QUNATITY, BATCH NUMBER QUANTITY, GENERAL DATA QUANTITY
-             * */
             $this->itemTransactionService->updatePreviousHistoryOfItems($request->modelName, $this->previousHistoryOfItems);
 
             DB::commit();
-
-            // Regenerate the CSRF token
-            //Session::regenerateToken();
-
-            return response()->json([
-                'status'    => true,
-                'message' => __('app.record_saved_successfully'),
-                'id' => $request->sale_id,
-
-            ]);
+            return response()->json(['status' => true, 'message' => __('app.record_saved_successfully'), 'id' => $saleId]);
         } catch (\Exception $e) {
-            DB::rollback();
-
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage(),
-            ], 409);
+            DB::rollBack();
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 409);
         }
     }
+
+
+
 
 
     public function saveSalePayments($request)
@@ -716,9 +719,9 @@ class SaleController extends Controller
              * payment_amount[0] & payment_amount[1] because POS page has only 2 payments static code
              * */
             //#0
-            $payment_0           = $request->payment_amount[0];
+            $payment_0 = $request->payment_amount[0];
             //#1
-            $payment_1           = $request->payment_amount[1];
+            $payment_1 = $request->payment_amount[1];
 
             //Only if single Payment has the value
             if ($payment_1 == 0) { // #1
@@ -742,7 +745,7 @@ class SaleController extends Controller
             /**
              * Data index start from 0
              * */
-            $amount           = $request->payment_amount[$i];
+            $amount = $request->payment_amount[$i];
 
             if ($amount > 0) {
                 if (!isset($request->payment_type_id[$i])) {
@@ -753,11 +756,11 @@ class SaleController extends Controller
                 }
 
                 $paymentsArray = [
-                    'transaction_date'          => $request->sale_date,
-                    'amount'                    => $amount,
-                    'payment_type_id'           => $request->payment_type_id[$i],
-                    'note'                      => $request->payment_note[$i],
-                    'payment_from_unique_code'  => General::INVOICE->value,
+                    'transaction_date' => $request->sale_date,
+                    'amount' => $amount,
+                    'payment_type_id' => $request->payment_type_id[$i],
+                    'note' => $request->payment_note[$i],
+                    'payment_from_unique_code' => General::INVOICE->value,
                 ];
                 if (!$transaction = $this->paymentTransactionService->recordPayment($request->modelName, $paymentsArray)) {
                     throw new \Exception(__('payment.failed_to_record_payment_transactions'));
@@ -852,146 +855,178 @@ class SaleController extends Controller
         $isWholesaleCustomer = $request->only('is_wholesale_customer')['is_wholesale_customer'];
 
         for ($i = 0; $i < $itemsCount; $i++) {
-            /**
-             * If array record not exist then continue forloop
-             * */
+            // skip holes
             if (!isset($request->item_id[$i])) {
                 continue;
             }
 
-            /**
-             * Data index start from 0
-             * */
-            $itemDetails = Item::find($request->item_id[$i]);
-            $itemName           = $itemDetails->name;
+            $itemDetails = \App\Models\Items\Item::with('offerComponents.componentItem')->find($request->item_id[$i]);
+            $itemName = $itemDetails->name;
 
-            //validate input Quantity
-            $itemQuantity       = $request->quantity[$i];
+            // Quantity validation
+            $itemQuantity = $request->quantity[$i];
             if (empty($itemQuantity) || $itemQuantity === 0 || $itemQuantity < 0) {
                 return [
                     'status' => false,
-                    'message' => ($itemQuantity < 0) ? __('item.item_qty_negative', ['item_name' => $itemName]) : __('item.please_enter_item_quantity', ['item_name' => $itemName]),
+                    'message' => ($itemQuantity < 0)
+                        ? __('item.item_qty_negative', ['item_name' => $itemName])
+                        : __('item.please_enter_item_quantity', ['item_name' => $itemName]),
                 ];
             }
 
-            //Validate is negative stock entry allowed or not for General Item
-            $regularItemTransaction = $this->itemTransactionService->validateRegularItemQuantity($itemDetails, $request->warehouse_id[$i], $itemQuantity, ItemTransactionUniqueCode::SALE->value);
+            // ===== FIX: Skip re-deducting offer components if reopening pending invoice =====
+            $skipOfferDeduction = (
+                $request->operation === 'update'
+                && $request->invoice_status === 'finished'
+                && $request->modelName->getOriginal('invoice_status') === 'pending'
+            );
+
+            // ===== COMBO/OFFER: validate component stock (only if not skipping) =====
+            if ($itemDetails->offerComponents && $itemDetails->offerComponents->count() > 0 && !$skipOfferDeduction) {
+                foreach ($itemDetails->offerComponents as $comp) {
+                    $need = (float) $comp->quantity * (float) $itemQuantity;
+
+                    // Use existing service-level stock validation for each component
+                    $ok = $this->itemTransactionService->validateRegularItemQuantity(
+                        $comp->componentItem,
+                        $request->warehouse_id[$i],
+                        $need,
+                        \App\Enums\ItemTransactionUniqueCode::SALE->value
+                    );
+
+                    if (!$ok) {
+                        return [
+                            'status' => false,
+                            'message' => "Insufficient stock for component '{$comp->componentItem->name}' to sell combo '{$itemName}'.",
+                        ];
+                    }
+                }
+            }
+
+            // Validate general item (as you already had)
+            $regularItemTransaction = $this->itemTransactionService->validateRegularItemQuantity(
+                $itemDetails,
+                $request->warehouse_id[$i],
+                $itemQuantity,
+                \App\Enums\ItemTransactionUniqueCode::SALE->value
+            );
 
             if (!$regularItemTransaction) {
                 throw new \Exception(__('item.failed_to_save_regular_item_record'));
             }
 
-            // //Validate is Restricted to sell above MRP
+            // Restrict rules you already have
             $this->restrictToSellAboveMRP($itemDetails, $request, $i);
-
-            // //Validate is Restricted to sell below MSP
             $this->restrictToSellBelowMSP($itemDetails, $request, $i);
 
-            //Auto-Update Item Master Sale Price
+            // Auto-Update Item Master Sale Price (existing behavior)
             $this->updateItemMasterSalePrice($request, $isWholesaleCustomer, $i);
 
-
             /**
-             *
-             * Item Transaction Entry
-             * */
+             * Record the sale line for the chosen item (existing behavior)
+             */
             $transaction = $this->itemTransactionService->recordItemTransactionEntry($request->modelName, [
-                'warehouse_id'              => $request->warehouse_id[$i],
-                'transaction_date'          => $request->sale_date,
-                'item_id'                   => $request->item_id[$i],
-                'description'               => $request->description[$i],
-
-                'tracking_type'             => $itemDetails->tracking_type,
-
-                'quantity'                  => $itemQuantity,
-                'unit_id'                   => $request->unit_id[$i],
-                'unit_price'                => $request->sale_price[$i],
-                'mrp'                       => $request->mrp[$i] ?? 0,
-
-                'discount'                  => $request->discount[$i],
-                'discount_type'             => $request->discount_type[$i],
-                'discount_amount'           => $request->discount_amount[$i],
-
-                'tax_id'                    => $request->tax_id[$i],
-                'tax_type'                  => $request->tax_type[$i],
-                'tax_amount'                => $request->tax_amount[$i],
-
-                'total'                     => $request->total[$i],
-
+                'warehouse_id' => $request->warehouse_id[$i],
+                'transaction_date' => $request->sale_date,
+                'item_id' => $request->item_id[$i],
+                'description' => $request->description[$i],
+                'tracking_type' => $itemDetails->tracking_type,
+                'quantity' => $itemQuantity,
+                'unit_id' => $request->unit_id[$i],
+                'unit_price' => $request->sale_price[$i],
+                'mrp' => $request->mrp[$i] ?? 0,
+                'discount_amount' => $request->discount[$i] ?? 0,
+                'discount_type' => $request->discount_type[$i] ?? 'percentage',
+                'tax_id' => $request->tax_id[$i] ?? null,
+                'tax_type' => $request->tax_type[$i] ?? 'exclusive',
+                'tax_amount' => $request->tax_amount[$i] ?? 0,
+                'total' => $request->total[$i] ?? 0,
             ]);
 
-            //return $transaction;
-            if (!$transaction) {
-                throw new \Exception("Failed to record Item Transaction Entry!");
+            // ===== COMBO/OFFER: consume component stock (movement only, zero price) =====
+            if ($itemDetails->offerComponents && $itemDetails->offerComponents->count() > 0 && !$skipOfferDeduction) {
+                foreach ($itemDetails->offerComponents as $comp) {
+                    $consumeQty = (float) $comp->quantity * (float) $itemQuantity;
+
+                    // Record a movement for the component so warehouse stock is decreased.
+                    // unit_price/total kept 0 to avoid double revenue; this is pure stock consumption.
+                    $this->itemTransactionService->recordItemTransactionEntry($request->modelName, [
+                        'warehouse_id' => $request->warehouse_id[$i],
+                        'transaction_date' => $request->sale_date,
+                        'item_id' => $comp->component_item_id,
+                        'description' => "Consumed by combo: {$itemName}",
+                        'tracking_type' => $comp->componentItem->tracking_type,
+                        'quantity' => $consumeQty,
+                        'unit_id' => $comp->componentItem->base_unit_id,
+                        'unit_price' => 0,
+                        'mrp' => 0,
+                        'discount_amount' => 0,
+                        'discount_type' => 'percentage',
+                        'tax_id' => null,
+                        'tax_type' => 'exclusive',
+                        'tax_amount' => 0,
+                        'total' => 0,
+                    ]);
+                }
             }
 
-
             /**
-             * Tracking Type:
-             * regular
-             * batch
-             * serial
-             * */
+             * Serial/Batch blocks you already have continue here unchanged...
+             */
             if ($itemDetails->tracking_type == 'serial') {
-                //Serial validate and insert records
                 if ($itemQuantity > 0) {
                     $jsonSerials = $request->serial_numbers[$i];
                     $jsonSerialsDecode = json_decode($jsonSerials);
 
-                    /**
-                     * Serial number count & Enter Quntity must be equal
-                     * */
                     $countRecords = (!empty($jsonSerialsDecode)) ? count($jsonSerialsDecode) : 0;
                     if ($countRecords != $itemQuantity) {
                         throw new \Exception(__('item.opening_quantity_not_matched_with_serial_records'));
                     }
 
                     foreach ($jsonSerialsDecode as $serialNumber) {
-                        $serialArray = [
-                            'serial_code'       =>  $serialNumber,
-                        ];
-
-                        $serialTransaction = $this->itemTransactionService->recordItemSerials($transaction->id, $serialArray, $request->item_id[$i], $request->warehouse_id[$i], ItemTransactionUniqueCode::SALE->value);
-
+                        $serialArray = ['serial_code' => $serialNumber];
+                        $serialTransaction = $this->itemTransactionService->recordItemSerials(
+                            $transaction->id,
+                            $serialArray,
+                            $request->item_id[$i],
+                            $request->warehouse_id[$i],
+                            \App\Enums\ItemTransactionUniqueCode::SALE->value
+                        );
                         if (!$serialTransaction) {
                             throw new \Exception(__('item.failed_to_save_serials'));
                         }
                     }
                 }
             } else if ($itemDetails->tracking_type == 'batch') {
-                //Serial validate and insert records
                 if ($itemQuantity > 0) {
-                    /**
-                     * Record Batch Entry for each batch
-                     * */
                     $batchArray = [
-                        'batch_no'              =>  $request->batch_no[$i],
-                        'mfg_date'              =>  $request->mfg_date[$i] ? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
-                        'exp_date'              =>  $request->exp_date[$i] ? $this->toSystemDateFormat($request->exp_date[$i]) : null,
-                        'model_no'              =>  $request->model_no[$i],
-                        'mrp'                   =>  $request->mrp[$i] ?? 0,
-                        'color'                 =>  $request->color[$i],
-                        'size'                  =>  $request->size[$i],
-                        'quantity'              =>  $itemQuantity,
+                        'batch_no' => $request->batch_no[$i],
+                        'mfg_date' => $request->mfg_date[$i] ? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
+                        'exp_date' => $request->exp_date[$i] ? $this->toSystemDateFormat($request->exp_date[$i]) : null,
+                        'model_no' => $request->model_no[$i],
+                        'mrp' => $request->mrp[$i] ?? 0,
+                        'color' => $request->color[$i],
+                        'size' => $request->size[$i],
+                        'quantity' => $itemQuantity,
                     ];
-
-                    $batchTransaction = $this->itemTransactionService->recordItemBatches($transaction->id, $batchArray, $request->item_id[$i], $request->warehouse_id[$i], ItemTransactionUniqueCode::SALE->value);
-
+                    $batchTransaction = $this->itemTransactionService->recordItemBatches(
+                        $transaction->id,
+                        $batchArray,
+                        $request->item_id[$i],
+                        $request->warehouse_id[$i],
+                        \App\Enums\ItemTransactionUniqueCode::SALE->value
+                    );
                     if (!$batchTransaction) {
                         throw new \Exception(__('item.failed_to_save_batch_records'));
                     }
                 }
             } else {
-                //Regular item transaction entry already done before if() condition
-
-
-
+                // regular: already handled
             }
-        } //for end
+        } // for end
 
         return ['status' => true];
     }
-
 
     /**
      * Datatabale
@@ -1012,9 +1047,12 @@ class SaleController extends Controller
             ->when($request->to_date, function ($query) use ($request) {
                 return $query->where('sale_date', '<=', $this->toSystemDateFormat($request->to_date));
             })
-            ->when(!auth()->user()->can('sale.invoice.can.view.other.users.sale.invoices'), function ($query) use ($request) {
-                return $query->where('created_by', auth()->user()->id);
-            });
+            ->when(
+                !optional(auth()->user())->can('sale.invoice.can.view.other.users.sale.invoices'),
+                function ($query) {
+                    return $query->where('created_by', auth()->user()->id);
+                }
+            );
 
         return DataTables::of($data)
             ->filter(function ($query) use ($request) {
@@ -1051,20 +1089,20 @@ class SaleController extends Controller
                     return [
                         'text' => "Converted from Sale Order",
                         'code' => $row->saleOrder->order_code,
-                        'url'  => route('sale.order.details', ['id' => $row->saleOrder->id]), // Sale Order link
+                        'url' => route('sale.order.details', ['id' => $row->saleOrder->id]), // Sale Order link
                     ];
                 } elseif ($row->quotation) {
                     return [
                         'text' => "Converted from Quotation",
                         'code' => $row->quotation->quotation_code,
-                        'url'  => route('sale.quotation.details', ['id' => $row->quotation->id]), // Quotation link
+                        'url' => route('sale.quotation.details', ['id' => $row->quotation->id]), // Quotation link
                     ];
                 }
 
                 return [
                     'text' => "",
                     'code' => "",
-                    'url'  => "",
+                    'url' => "",
                 ];
             })
 
@@ -1078,16 +1116,16 @@ class SaleController extends Controller
 
                     return [
                         'status' => "Return Raised",
-                        'codes'  => implode(', ', $returnCodes), // Convert codes to comma-separated string
-                        'urls'   => array_map(function ($id) {
+                        'codes' => implode(', ', $returnCodes), // Convert codes to comma-separated string
+                        'urls' => array_map(function ($id) {
                             return route('sale.return.details', ['id' => $id]);
                         }, $returnIds), // Generate URLs for each return ID
                     ];
                 }
                 return [
                     'status' => "",
-                    'codes'  => "",
-                    'urls'   => [],
+                    'codes' => "",
+                    'urls' => [],
                 ];
             })
 
@@ -1215,9 +1253,9 @@ class SaleController extends Controller
         $content = ($emailData['status']) ? $emailData['data']['content'] : '';
 
         $data = [
-            'email'  => $model->party->email,
-            'subject'  => $subject,
-            'content'  => $content,
+            'email' => $model->party->email,
+            'subject' => $subject,
+            'content' => $content,
         ];
         return $data;
     }
@@ -1235,8 +1273,8 @@ class SaleController extends Controller
         $content = ($emailData['status']) ? $emailData['data']['content'] : '';
 
         $data = [
-            'mobile'  => $mobile,
-            'content'  => $content,
+            'mobile' => $mobile,
+            'content' => $content,
         ];
         return $data;
     }
@@ -1304,5 +1342,44 @@ class SaleController extends Controller
                 'message' => $e->getMessage(),
             ], 409);
         }
+    }
+
+    /**
+     * Ajax Response
+     * Search Bar for select2 list
+     * */
+    public function getAjaxSearchBarList()
+    {
+        $search = request('search');
+        $page = request('page', 1);
+        $perPage = 10;
+
+        $query = Sale::with('party')
+            ->where(function ($q) use ($search) {
+                $q->where('sale_code', 'LIKE', "%{$search}%")
+                    ->orWhereHas('party', function ($partyQuery) use ($search) {
+                        $partyQuery->where('first_name', 'LIKE', "%{$search}%")
+                            ->orWhere('last_name', 'LIKE', "%{$search}%");
+                    });
+            });
+
+        $total = $query->count();
+        $invoices = $query
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        $results = $invoices->map(function ($invoice) {
+            return [
+                'id' => $invoice->id,
+                'text' => $invoice->sale_code,
+                'party_name' => optional($invoice->party)->getFullName(),
+            ];
+        });
+
+        return response()->json([
+            'results' => $results,
+            'hasMore' => ($page * $perPage) < $total
+        ]);
     }
 }

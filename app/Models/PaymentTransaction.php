@@ -19,9 +19,7 @@ use App\Models\ChequeTransaction;
 class PaymentTransaction extends Model
 {
     use HasFactory;
-
     use FormatsDateInputs;
-    
     use FormatTime;
 
     /**
@@ -41,8 +39,18 @@ class PaymentTransaction extends Model
     ];
 
     /**
+     * ✅ Automatically cast these attributes to Carbon instances
+     * so you can safely use ->format(), ->diffForHumans(), etc.
+     */
+    protected $casts = [
+        'transaction_date' => 'datetime',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
+    ];
+
+    /**
      * Insert & update User Id's
-     * */
+     */
     protected static function boot()
     {
         parent::boot();
@@ -77,9 +85,9 @@ class PaymentTransaction extends Model
 
     /**
      * This method calling the Trait FormatsDateInputs
-     * @return null or string
+     * @return null|string
      * Use it as formatted_transaction_date
-     * */
+     */
     public function getFormattedTransactionDateAttribute()
     {
         return $this->toUserDateFormat($this->transaction_date); // Call the trait method
@@ -87,9 +95,9 @@ class PaymentTransaction extends Model
 
     /**
      * This method calling the Trait FormatTime
-     * @return null or string
+     * @return null|string
      * Use it as format_created_time
-     * */
+     */
     public function getFormatCreatedTimeAttribute()
     {
         return $this->toUserTimeFormat($this->created_at); // Call the trait method
@@ -98,12 +106,12 @@ class PaymentTransaction extends Model
     /**
      * Get Payment Type
      * @return HasOne
-     * */
+     */
     public function paymentType(): HasOne
     {
         return $this->hasOne(PaymentTypes::class, 'id', 'payment_type_id');
     }
-    
+
     /**
      * Define the relationship between Item Transaction & Items table.
      *
@@ -114,6 +122,11 @@ class PaymentTransaction extends Model
         return $this->morphMany(AccountTransaction::class, 'transaction');
     }
 
+    /**
+     * Define the relationship with cheque transactions.
+     *
+     * @return HasOne
+     */
     public function chequeTransaction(): HasOne
     {
         return $this->hasOne(ChequeTransaction::class, 'payment_transaction_id');

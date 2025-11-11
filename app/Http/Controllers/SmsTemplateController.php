@@ -8,6 +8,7 @@ use App\Http\Requests\SmsTemplateRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use App\Models\SmsTemplate;
+use Illuminate\Database\QueryException;
 
 class SmsTemplateController extends Controller
 {

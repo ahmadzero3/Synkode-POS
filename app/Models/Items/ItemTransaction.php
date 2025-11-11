@@ -144,7 +144,7 @@ class ItemTransaction extends Model
 
     /**
      * ItemTransaction item has unit id
-     * 
+     *
      * @return BelongsTo
      * */
     public function unit(): BelongsTo
@@ -154,7 +154,7 @@ class ItemTransaction extends Model
 
     /**
      * ItemTransaction item has item id
-     * 
+     *
      * @return BelongsTo
      * */
     public function item(): BelongsTo
@@ -164,7 +164,7 @@ class ItemTransaction extends Model
 
     /**
      * ItemTransaction item has item id
-     * 
+     *
      * @return BelongsTo
      * */
     public function warehouse(): BelongsTo
@@ -178,7 +178,7 @@ class ItemTransaction extends Model
     }
     /**
      * ItemTransaction item has item id
-     * 
+     *
      * @return BelongsTo
      * */
     public function purchase(): BelongsTo

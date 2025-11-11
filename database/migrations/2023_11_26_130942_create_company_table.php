@@ -35,6 +35,8 @@ return new class extends Migration
             $table->integer('enable_model')->default(0);
             $table->integer('enable_color')->default(0);
             $table->integer('enable_size')->default(0);
+            $table->boolean('enable_minimum_stock_qty')->default(false);
+            $table->integer('minimum_stock_qty')->nullable();
             $table->boolean('enable_print_tax')->default(false);
             $table->boolean('enable_print_discount')->default(false);
 

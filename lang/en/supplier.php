@@ -21,4 +21,6 @@ return [
     'due_payment_report'        => "Supplier Due Payment Report",
     /*1.2.1*/
     'default_supplier'          => "Set as a default Supplier",
+    //2.4.1
+    'payables_minus_receivables' => 'Supplier Receivable - Payble'
 ];

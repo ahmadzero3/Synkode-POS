@@ -42,6 +42,27 @@ class CustomizationsSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id'    => 5,
+                'key'   => 'image_1',
+                'value' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id'    => 6,
+                'key'   => 'image_2',
+                'value' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id'    => 7,
+                'key'   => 'image_3',
+                'value' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

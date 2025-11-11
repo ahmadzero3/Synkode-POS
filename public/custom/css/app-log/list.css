@@ -1,0 +1,42 @@
+.app-log-table-wrapper .badge {
+    font-size: 0.75rem;
+}
+
+.app-log-table-wrapper table {
+    font-size: 0.875rem;
+}
+
+/* Ensure dropdown width is consistent */
+.app-log-table-wrapper .dropdown-menu {
+    min-width: 140px;
+}
+
+/* Preformatted text styling */
+.app-log-table-wrapper pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.875rem;
+    font-family: "Courier New", monospace;
+}
+
+.app-log-table-wrapper {
+    overflow-x: visible !important;
+}
+
+@media (max-width: 991.98px) {
+    .app-log-table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Responsive adjustments for mobile only */
+@media (max-width: 768px) {
+    .app-log-table-wrapper .table-responsive {
+        border: 0;
+    }
+
+    .app-log-table-wrapper table {
+        font-size: 0.8rem;
+    }
+}

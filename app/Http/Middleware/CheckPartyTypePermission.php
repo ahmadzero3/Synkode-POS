@@ -32,7 +32,7 @@ class CheckPartyTypePermission
         if (isset($this->actionPermissionMap[$action])) {
             if($partyType == 'customer' || $partyType == 'supplier'){
                 $permission = $partyType . '.' . $this->actionPermissionMap[$action];
-                if (!auth()->user()->can($permission)) {
+                if (!optional(auth()->user())->can($permission)) {
                     abort(403, 'Unauthorized action.');
                 }
             }

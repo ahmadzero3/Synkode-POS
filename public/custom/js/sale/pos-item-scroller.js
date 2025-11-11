@@ -125,14 +125,16 @@ function hideLoadingMessage() {
 
 function appendItemToGrid(item) {
     const image_path = `${baseURL}/item/getimage/thumbnail/${item.image_path}`;
-    const isDisabled = item.current_stock <= 0 ? "disabled" : "";
-    const emptyStockHtml =
-        item.current_stock <= 0
-            ? `<div class="empty-stock-overlay">
+
+    const allowNegative = window.allowNegativeStockBilling === true || window.allowNegativeStockBilling === "true";
+
+    const isDisabled = (!allowNegative && item.current_stock <= 0) ? "disabled" : "";
+    const emptyStockHtml = (!allowNegative && item.current_stock <= 0)
+        ? `<div class="empty-stock-overlay">
                <i class="bx bx-x-circle"></i>
                <span>Empty Stock</span>
            </div>`
-            : "";
+        : "";
 
     const showTag =
         window.toggleSwitchActive &&
@@ -149,19 +151,13 @@ function appendItemToGrid(item) {
             <div class="card h-100 item-card border ${isDisabled} position-relative">
                 ${tagHtml}
                 <div class="item-image">
-                    <img src="${image_path}" class="card-img-top" alt="${
-        item.name
-    }">
-                    <span class="item-quantity">Qty: ${_parseQuantity(
-                        item.current_stock
-                    )}</span>
+                    <img src="${image_path}" class="card-img-top" alt="${item.name}">
+                    <span class="item-quantity">Qty: ${_parseQuantity(item.current_stock)}</span>
                 </div>
                 ${emptyStockHtml}
                 <div class="card-body">
                     <h6 class="card-title">${item.name}</h6>
-                    <p class="card-text item-price">${_parseFix(
-                        item.sale_price
-                    )}</p>
+                    <p class="card-text item-price">${_parseFix(item.sale_price)}</p>
                 </div>
                 <div class="add-item position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none justify-content-center align-items-center rounded">
                     <button class="btn btn-primary" type="button"

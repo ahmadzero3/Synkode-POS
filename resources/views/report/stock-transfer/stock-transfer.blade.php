@@ -77,7 +77,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="reportTable">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('warehouse.transfer_code') }}</th>
                                                         <th>{{ __('app.date') }}</th>

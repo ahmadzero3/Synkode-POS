@@ -41,10 +41,10 @@ class Version21Seeder extends Seeder
     public function updateRecords()
     {
 
-       //select all items
-       $items = Item::all();
-       if($items->isNotEmpty()){
-        foreach($items as $item){
+        //select all items
+        $items = Item::all();
+        if ($items->isNotEmpty()) {
+            foreach ($items as $item) {
 
                 $this->updateItemGeneralQuantityWarehouseWise($item->id);
             }
@@ -56,7 +56,8 @@ class Version21Seeder extends Seeder
         //
     }
 
-    public function updateItemGeneralQuantityWarehouseWise($itemGeneralMasterId){
+    public function updateItemGeneralQuantityWarehouseWise($itemGeneralMasterId)
+    {
 
         $CONST_PURCHASE_ORDER   = ItemTransactionUniqueCode::PURCHASE_ORDER->value;
         $CONST_PURCHASE         = ItemTransactionUniqueCode::PURCHASE->value;
@@ -140,13 +141,13 @@ class Version21Seeder extends Seeder
                                 item_id,
                                 warehouse_id
                             ')
-                            ->join('items', 'item_transactions.item_id', '=', 'items.id')
-                            ->whereNotIn('unique_code', [ItemTransactionUniqueCode::PURCHASE_ORDER->value, ItemTransactionUniqueCode::SALE_ORDER->value])
-                            ->where('item_id', $itemGeneralMasterId)
-                            ->groupBy('item_id', 'warehouse_id')
-                            ->get();
+            ->join('items', 'item_transactions.item_id', '=', 'items.id')
+            ->whereNotIn('unique_code', [ItemTransactionUniqueCode::PURCHASE_ORDER->value, ItemTransactionUniqueCode::SALE_ORDER->value])
+            ->where('item_id', $itemGeneralMasterId)
+            ->groupBy('item_id', 'warehouse_id')
+            ->get();
 
-        if($itemTransactions->count() > 0){
+        if ($itemTransactions->count() > 0) {
             //Delete ItemGeneralQuantity
             ItemGeneralQuantity::where('item_id', $itemGeneralMasterId)->delete();
 
@@ -157,7 +158,7 @@ class Version21Seeder extends Seeder
 
             //MULTIPLE ITEM TRANSACTIONS
             foreach ($itemGeneralTransactions as $warehouseId => $generalransactions) {
-                foreach($generalransactions as $generalransaction){
+                foreach ($generalransactions as $generalransaction) {
                     //Record ItemGeneralQuantity
                     $readyData = [
                         'item_id'               => $generalransaction['item_id'],
@@ -166,7 +167,7 @@ class Version21Seeder extends Seeder
                     ];
 
                     $created = ItemGeneralQuantity::create($readyData);
-                    if(!$created){
+                    if (!$created) {
                         throw new \Exception('Failed to record General Items Warehouse Wise!');
                     }
 
@@ -174,13 +175,12 @@ class Version21Seeder extends Seeder
                      * Update Item Master Stock
                      * */
                     $updateStock = $itemService->updateItemStock($itemGeneralMasterId);
-                    if(!$updateStock){
+                    if (!$updateStock) {
                         throw new \Exception('Failed to update Item Master Stock!!');
                     }
-                }//foreach generalransactions
+                } //foreach generalransactions
             }
         }
         return true;
     }
-
 }

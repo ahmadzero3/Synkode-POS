@@ -73,4 +73,6 @@ return [
     'avg_purchase_cost'         => 'Purchase Cost(Avg)',
     'we_calcuating_avg_purchase_price_of_item' => 'We are calculating the average purchase price of item(s)',
 
+
+
 ];

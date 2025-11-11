@@ -6,7 +6,8 @@
                 <h5 class="modal-title form-heading">{{ __('payment.cash_in_hand') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form class=" needs-validation" id="cashAdjustmentForm" action="{{ route('cash.transaction.store') }}" enctype="multipart/form-data">
+            <form class=" needs-validation" id="cashAdjustmentForm" action="{{ route('cash.transaction.store') }}"
+                enctype="multipart/form-data">
                 {{-- CSRF Protection --}}
                 @csrf
                 @method('POST')
@@ -22,10 +23,24 @@
                     <div class="col-md-12">
                         <x-label for="adjustment_date" name="{{ __('app.date') }}" />
                         <div class="input-group mb-3">
-                            <x-input type="text" additionalClasses="datepicker" name="adjustment_date" :required="true" value="" />
-                            <span class="input-group-text" id="input-near-focus" role="button"><i class="fadeIn animated bx bx-calendar-alt"></i></span>
+                            <x-input type="text" additionalClasses="datepicker" name="adjustment_date"
+                                :required="true" value="" />
+                            <span class="input-group-text" id="input-near-focus" role="button"><i
+                                    class="fadeIn animated bx bx-calendar-alt"></i></span>
                         </div>
                     </div>
+
+                    <div class="col-md-12">
+                        <x-label for="register_id" name="{{ __('register.registers') }}" />
+                        <select
+                            class="form-select register-ajax"
+                            id="register_id"
+                            name="register_id"
+                            data-placeholder="{{ __('register.select_register') }}"
+                            data-ajax-url="{{ route('register.ajax.index') }}">
+                        </select>
+                    </div>
+
                     <div class="col-md-12">
                         <x-label for="amount" name="{{ __('payment.amount') }}" />
                         <x-input type="text" additionalClasses="cu_numeric text-start" name="amount" value="" />

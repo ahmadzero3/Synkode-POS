@@ -3,7 +3,6 @@ $(function() {
 
     let originalButtonText;
 
-    
 
     /**
      * Language

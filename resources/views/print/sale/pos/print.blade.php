@@ -123,15 +123,17 @@
                     // --- End Direct Fetch ---
 
                     $subtotal = $sale->itemTransaction->sum(function ($transaction) {
-                        $unitPrice = $transaction->unit_price;
-                        return $unitPrice * $transaction->quantity;
+                        $unitPrice = (float) $transaction->unit_price;
+                        $quantity = (float) $transaction->quantity;
+                        return $unitPrice * $quantity;
                     });
+
                     $discount = $sale->itemTransaction->sum(function ($transaction) {
-                        return $transaction->discount_amount;
+                        return (float) $transaction->discount_amount;
                     });
 
                     $taxAmount = $sale->itemTransaction->sum(function ($transaction) {
-                        return $transaction->tax_amount;
+                        return (float) $transaction->tax_amount;
                     });
 
                 @endphp
@@ -171,12 +173,22 @@
                 @endif
 
                 @if ($sale->change_return > 0)
+                    <div class="col-8 text-end"><strong>{{ __('payment.payment_amount') }}</strong></div>
+                    <div class="col-4">{{ $formatNumber->formatWithPrecision($sale->payment_amount) }}</div>
+
                     <div class="col-8 text-end"><strong>{{ __('payment.change_return') }}</strong></div>
                     <div class="col-4">{{ $formatNumber->formatWithPrecision($sale->change_return) }}</div>
                 @endif
 
                 <div class="col-8 text-end"><strong>{{ __('payment.paid_amount') }}</strong></div>
-                <div class="col-4">{{ $formatNumber->formatWithPrecision($sale->paid_amount) }}</div>
+
+
+                @php
+                    $paidAmount = $sale->paymentTransaction->sum('amount');
+                @endphp
+
+
+                <div class="col-4">{{ $formatNumber->formatWithPrecision($paidAmount) }}</div>
 
                 @if (app('company')['show_mrp'])
                     @php
@@ -240,8 +252,8 @@
                                         });
                                         return [
                                             'tax_id' => $firstItem->tax_id,
-                                            'tax_name' => $firstItem->tax->name,
-                                            'tax_rate' => $firstItem->tax->rate,
+                                            'tax_name' => optional($firstItem->tax)->name ?? __('tax.no_tax'),
+                                            'tax_rate' => optional($firstItem->tax)->rate ?? 0,
                                             'total_taxable_amount' => $totalTaxableAmount,
                                             'total_tax' => $group->sum('tax_amount'),
                                         ];
@@ -262,10 +274,10 @@
                                                     return $totalOfEachItem;
                                                 });
                                                 return [
-                                                    'hsn' => $firstItem->item->hsn,
+                                                    'hsn' => $firstItem->item->hsn ?? '-',
                                                     'tax_id' => $firstItem->tax_id,
-                                                    'tax_name' => $firstItem->tax->name,
-                                                    'tax_rate' => $firstItem->tax->rate,
+                                                    'tax_name' => optional($firstItem->tax)->name ?? __('tax.no_tax'),
+                                                    'tax_rate' => optional($firstItem->tax)->rate ?? 0,
                                                     'total_taxable_amount' => $totalTaxableAmount,
                                                     'total_tax' => $group->sum('tax_amount'),
                                                 ];

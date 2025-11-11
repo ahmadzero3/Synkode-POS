@@ -52,6 +52,7 @@ class Sale extends Model
         'payment_amount',
         'balance',
         'change_return',
+        'user_id',
     ];
 
     /**
@@ -170,5 +171,10 @@ class Sale extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function cashier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

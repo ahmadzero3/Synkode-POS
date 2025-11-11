@@ -14,12 +14,10 @@ return [
 
             'files' => [
 
-                // ❌ Don't include any files or directories
                 'include' => [
                     // base_path(), ← remove or comment this out
                 ],
 
-                // ✅ Optionally keep exclude list, but it's irrelevant when 'include' is empty
                 'exclude' => [
                     base_path('vendor'),
                     base_path('node_modules'),
@@ -30,7 +28,6 @@ return [
                 'relative_path' => null,
             ],
 
-            // ✅ Only the database will be backed up
             'databases' => [
                 'pgsql',
             ],

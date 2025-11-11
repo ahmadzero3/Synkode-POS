@@ -33,8 +33,6 @@ return [
 
     'receipt_no' => 'رقم الإيصال',
 
-
-
     'summary' => 'ملخص الدفع',
 
     'paid_to' => 'مدفوع إلى',
@@ -45,7 +43,6 @@ return [
 
     'payment_receipt' => 'إيصال الدفع',
 
-
     'previously_paid'           => 'المدفوعة سابقا',
 
     'received_from'             => 'تم الاستلام من',
@@ -54,10 +51,7 @@ return [
 
     'cash'                   => 'نقدي',
 
-    'cheque'                    => 'يفحص',
-
-
-
+    'cheque'                    => 'شيك',
 
     'missed_to_select_payment_type' => 'فشل في تحديد نوع الدفع',
 
@@ -157,8 +151,6 @@ return [
 
     'paid_amount' => 'المبلغ المدفوع',
 
-
-
     'no_balance' => 'لا يوجد رصيد',
 
     'payment_direction' => 'اتجاه الدفع',
@@ -176,5 +168,30 @@ return [
     'receipt'                               => 'الإيصال',
 
     //1.5.1
-    'paid_amount_should_not_be_less_than_zero'                               => 'يجب ألا يكون المبلغ المدفوع أقل من صفر',
+    'paid_amount_should_not_be_less_than_zero' => 'يجب ألا يكون المبلغ المدفوع أقل من صفر',
+
+    'payment_amount' => 'مبلغ الدفع',
+
+    'opening_balance'        => 'الرصيد الافتتاحي',
+    'today_income'           => 'دخل اليوم',
+    'total_income'           => 'إجمالي الدخل',
+    'today_expense'          => 'مصروفات اليوم',
+    'balance_cash_in_hand'   => 'الرصيد / النقد في الصندوق',
+    'today_closing_balance'  => 'الرصيد الختامي لليوم',
+
+    'report_x_register_shift' => 'تقرير (X) مناوبة التسجيل',
+    'report_z_end_day'        => 'تقرير (Z) نهاية اليوم',
+
+    'report_x_register_shift_note' => 'هذا تقرير مولد بالحاسوب لإغلاق مناوبة التسجيل.',
+    'report_z_end_day_note' => 'هذا تقرير مولد بالحاسوب لملخص نهاية اليوم.',
+    'end_of_day_summary' => 'ملخص نهاية اليوم',
+    'register_wise_summary' => 'ملخص حسب التسجيل',
+    'payment_type_breakdown' => 'تفصيل نوع الدفع',
+    'total_daily_income' => 'إجمالي الدخل اليومي',
+    'total_daily_expenses' => 'إجمالي المصروفات اليومية',
+    'grand_total_income' => 'إجمالي الدخل الإجمالي',
+    'net_cash_position' => 'صافي المركز النقدي',
+    'final_closing_balance' => 'الرصيد الختامي النهائي',
+    'total_opening_balance' => 'إجمالي الرصيد الافتتاحي',
+
 ];
