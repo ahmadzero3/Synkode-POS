@@ -38,4 +38,16 @@ return [
     //1.4.3
     'net_summary'                    => 'ملخص الصافي',
 
+    //2.4.1
+    'item_wise'                   => 'حسب العنصر',
+    'invoice_wise'                => 'حسب الفاتورة',
+    'summary'                       => 'ملخص',
+    'summary_and_gross_profit' => 'ملخص والربح الإجمالي',
+    'itew_wise_profit_and_loss' => 'الربح والخسارة حسب العنصر',
+    'brand_wise_profit_and_loss' => 'الربح والخسارة حسب العلامة التجارية',
+    'invoice_wise_profit_and_loss' => 'الربح والخسارة حسب الفاتورة',
+    'profit_by_items'                => 'الربح حسب العناصر',
+    'profit_by_brands'               => 'الربح حسب العلامات التجارية',
+    'profit_by_invoice'             => 'الربح حسب الفاتورة',
+    'profit_summary'             => 'ملخص الربح',
 ];

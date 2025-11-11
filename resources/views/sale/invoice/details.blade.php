@@ -179,7 +179,7 @@
                                                     </td>
                                                     <th scope="col" class="text-end {{ (app('company')['tax_type'] == 'no-tax') ? 'd-none':'' }}">
                                                         {{ $formatNumber->formatWithPrecision($transaction->tax_amount) }}<br>
-                                                        <small>({{ $transaction->tax->rate }}%)</small>
+                                                        <small>({{ $transaction->tax->rate ?? 0 }}%)</small>
                                                         </td>
                                                     <td class="unit">
                                                         {{ $formatNumber->formatWithPrecision($transaction->total) }}

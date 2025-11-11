@@ -104,17 +104,17 @@
                                                     <th scope="col">{{ __('warehouse.adjustment_qty') }}</th>
                                                     <th scope="col">{{ __('unit.unit') }}</th>
                                                     <th scope="col">{{ __('warehouse.adjustment_type') }}</th>
-                                                    <th scope="col">{{ __('app.action') }}</th>
+                                                    <th scope="col">{{ __('app.action') }}</th> <!-- moved to last -->
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td colspan="13"
-                                                        class="text-center fw-light fst-italic default-row">
+                                                <tr class="default-row">
+                                                    <td colspan="13" class="text-center fw-light fst-italic">
                                                         No items are added yet!!
                                                     </td>
                                                 </tr>
                                             </tbody>
+
                                             <tfoot>
                                                 <tr>
                                                     <td colspan="2" class="fw-bold text-end tfoot-first-td">
@@ -139,7 +139,7 @@
                                 <div class="card-header px-4 py-3"></div>
                                 <div class="card-body p-4 row g-3">
                                     <div class="col-md-12">
-                                        <div class="d-md-flex d-grid align-items-center gap-3">
+                                        <div class="d-md-flex d-grid align-items-center gap-3 justify-content-end">
                                             <x-button type="button" class="primary px-4" buttonId="submit_form"
                                                 text="{{ __('app.submit') }}" />
                                             <x-anchor-tag href="{{ route('dashboard') }}" text="{{ __('app.close') }}"

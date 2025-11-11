@@ -41,6 +41,8 @@ return [
     'sale_invoices' => 'فواتير بيع',
     'sale_invoice' => 'فاتورة بيع',
     'invoice_date' => 'تاريخ الفاتورة',
+    'customer_display' => 'عرض العميل',
+    'order_from'       => 'طلبك من',
 
     'return' => [
         'return' => 'إقرار بيع/مذكرة محاسبية',
@@ -103,8 +105,20 @@ return [
 
     'sale_return'           => 'إرجاع البيع',
 
+    'pending_invoices'   => 'الفواتير المعلقة',
+    'sale_code'          => 'كود البيع',
+    'sale_date'          => 'تاريخ البيع',
+    'created_at'         => 'أنشئت في',
+    'invoice_status'     => 'حالة الفاتورة',
+    'finish'             => 'إنهاء',
+    'delete'             => 'حذف',
+    'return_invoice'     => 'إرجاع',
+    'no_pending_invoices' => 'لم يتم العثور على فواتير معلقة.',
+
     //2.4.1
     'sale_total'                                   => 'إجمالي البيع',
     'invoice_no'                                   => 'رقم الفاتورة',
     'sale_amount'                                  => 'مبلغ البيع',
+
+
 ];

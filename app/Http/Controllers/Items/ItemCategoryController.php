@@ -19,10 +19,10 @@ class ItemCategoryController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create(): View  {
+    public function create(): View
+    {
 
         return view('items.category.create');
-
     }
 
     /**
@@ -30,17 +30,19 @@ class ItemCategoryController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function list() : View {
+    public function list(): View
+    {
         return view('items.category.list');
     }
 
-     /**
+    /**
      * Edit a items.
      *
      * @param int $id The ID of the item to edit.
      * @return \Illuminate\View\View
      */
-    public function edit($id) : View {
+    public function edit($id): View
+    {
 
         $category = ItemCategory::find($id);
 
@@ -50,7 +52,8 @@ class ItemCategoryController extends Controller
     /**
      * Return JsonResponse
      * */
-    public function store(ItemCategoryRequest $request) : JsonResponse  {
+    public function store(ItemCategoryRequest $request): JsonResponse
+    {
 
         $filename = null;
 
@@ -73,7 +76,8 @@ class ItemCategoryController extends Controller
     /**
      * Return JsonResponse
      * */
-    public function update(ItemCategoryRequest $request) : JsonResponse {
+    public function update(ItemCategoryRequest $request): JsonResponse
+    {
         $validatedData = $request->validated();
 
         // Save the category details
@@ -84,44 +88,46 @@ class ItemCategoryController extends Controller
         ]);
     }
 
-    public function datatableList(Request $request){
+    public function datatableList(Request $request)
+    {
 
         $data = ItemCategory::with('user');
 
         return DataTables::of($data)
-                    ->addIndexColumn()
-                    ->addColumn('created_at', function ($row) {
-                        return $row->created_at->format(app('company')['date_format']);
-                    })
-                    ->addColumn('username', function ($row) {
-                        return $row->user->username??'';
-                    })
-                    ->addColumn('action', function($row){
-                            $id = $row->id;
+            ->addIndexColumn()
+            ->addColumn('created_at', function ($row) {
+                return $row->created_at->format(app('company')['date_format']);
+            })
+            ->addColumn('username', function ($row) {
+                return $row->user->username ?? '';
+            })
+            ->addColumn('action', function ($row) {
+                $id = $row->id;
 
-                            $editUrl = route('item.category.edit', ['id' => $id]);
-                            $deleteUrl = route('item.category.delete', ['id' => $id]);
+                $editUrl = route('item.category.edit', ['id' => $id]);
+                $deleteUrl = route('item.category.delete', ['id' => $id]);
 
 
-                            $actionBtn = '<div class="dropdown ms-auto">
+                $actionBtn = '<div class="dropdown ms-auto">
                             <a class="dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded font-22 text-option"></i>
                             </a>
                             <ul class="dropdown-menu">';
-                                $actionBtn .= '<li>
-                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> '.__('app.edit').'</a>
+                $actionBtn .= '<li>
+                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> ' . __('app.edit') . '</a>
                                 </li>';
-                                $actionBtn .= ($row->is_deletable==0)? '' : '<li>
-                                    <button type="button" class="dropdown-item text-danger deleteRequest " data-delete-id='.$id.'><i class="bx bx-trash"></i> '.__('app.delete').'</button>
+                $actionBtn .= ($row->is_deletable == 0) ? '' : '<li>
+                                    <button type="button" class="dropdown-item text-danger deleteRequest " data-delete-id=' . $id . '><i class="bx bx-trash"></i> ' . __('app.delete') . '</button>
                                 </li>';
-                            $actionBtn .= '</ul>
+                $actionBtn .= '</ul>
                         </div>';
-                            return $actionBtn;
-                    })
-                    ->rawColumns(['action'])
-                    ->make(true);
+                return $actionBtn;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
-    public function delete(Request $request) : JsonResponse{
+    public function delete(Request $request): JsonResponse
+    {
 
         $selectedRecordIds = $request->input('record_ids');
 
@@ -132,9 +138,8 @@ class ItemCategoryController extends Controller
                 // Invalid record ID, handle the error (e.g., show a message, log, etc.)
                 return response()->json([
                     'status'    => false,
-                    'message' => __('app.invalid_record_id',['record_id' => $recordId]),
+                    'message' => __('app.invalid_record_id', ['record_id' => $recordId]),
                 ]);
-
             }
             // You can perform additional validation checks here if needed before deletion
         }
@@ -157,8 +162,40 @@ class ItemCategoryController extends Controller
                 return response()->json([
                     'status'    => false,
                     'message' => __('app.cannot_delete_records'),
-                ],409);
+                ], 409);
             }
         }
+    }
+
+    public function getAjaxSearchBarList()
+    {
+        $search = request('search', '');
+        $page = (int) request('page', 1);
+        $perPage = 10;
+
+        $query = ItemCategory::query()
+            ->when($search, function ($q) use ($search) {
+                $q->whereRaw('UPPER(name) LIKE ?', ['%' . strtoupper($search) . '%']);
+            });
+
+        $total = $query->count();
+
+        $items = $query
+            ->select('id', 'name')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        $results = $items->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'text' => $item->name,
+            ];
+        });
+
+        return response()->json([
+            'results' => $results,
+            'hasMore' => ($page * $perPage) < $total, // Important!
+        ]);
     }
 }

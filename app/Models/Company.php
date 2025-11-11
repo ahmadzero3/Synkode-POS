@@ -12,11 +12,6 @@ class Company extends Model
 
     protected $table = 'company';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -38,27 +33,44 @@ class Company extends Model
         'auto_update_sale_price',
         'auto_update_purchase_price',
         'auto_update_average_purchase_price',
+        'is_item_name_unique',
+        'enable_serial_tracking',
+        'enable_batch_tracking',
+        'is_batch_compulsory',
+        'enable_mfg_date',
+        'enable_exp_date',
+        'enable_color',
+        'enable_size',
+        'enable_model',
+        'tax_type',
+        'enable_minimum_stock_qty',
+        'minimum_stock_qty',
+        'show_tax_summary',
         'enable_print_tax',
         'enable_print_discount',
+        'show_signature_on_invoice',
+        'show_party_due_payment',
+        'show_terms_and_conditions_on_invoice',
+        'terms_and_conditions',
+
+        'number_precision',
+        'quantity_precision',
+        'is_enable_carrier',
+        'is_enable_crm',
     ];
 
-    /**
-     * Insert & update User Id's
-     * */
     protected static function boot()
     {
         parent::boot();
-        /**
-         * created
-         * updated
-         * cache created in App\Services\CacheService.php
-         * */
+
         static::created(function ($company) {
             Cache::forget('company');
         });
+
         static::updated(function ($company) {
             Cache::forget('company');
         });
+
         static::deleted(function ($company) {
             Cache::forget('company');
         });

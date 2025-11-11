@@ -1,0 +1,24 @@
+.session-table-wrapper {
+    padding: 0;
+}
+
+.session-table-wrapper .dataTables_wrapper {
+    padding: 0;
+}
+
+.session-table-wrapper table {
+    margin-bottom: 0 !important;
+}
+
+@media (min-width: 992px) {
+    .session-table-wrapper {
+        overflow-x: visible !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .session-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}

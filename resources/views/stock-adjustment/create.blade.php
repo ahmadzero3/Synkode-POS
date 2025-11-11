@@ -103,27 +103,27 @@
                                                     <th scope="col">{{ __('warehouse.adjustment_qty') }}</th>
                                                     <th scope="col">{{ __('unit.unit') }}</th>
                                                     <th scope="col">{{ __('warehouse.adjustment_type') }}</th>
-                                                    <!-- Action moved to last -->
-                                                    <th scope="col">{{ __('app.action') }}</th>
+                                                    <th scope="col">{{ __('app.action') }}</th> <!-- moved to last -->
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <!-- colspan now spans all visible columns -->
-                                                    <td colspan="13"
-                                                        class="text-center fw-light fst-italic default-row">
+                                                <tr class="default-row">
+                                                    <td colspan="13" class="text-center fw-light fst-italic">
                                                         No items are added yet!!
                                                     </td>
                                                 </tr>
                                             </tbody>
+
                                             <tfoot>
                                                 <tr>
-                                                    <!-- colspan spans everything except the last 2 columns: QTY + Action -->
-                                                    <td colspan="8" class="fw-bold text-end tfoot-first-td">
+                                                    <td colspan="2" class="fw-bold text-end tfoot-first-td">
                                                         {{ __('app.total') }}
                                                     </td>
-                                                    <td class="fw-bold sum_of_quantity">0</td>
-                                                    <td></td>
+                                                    <td class="fw-bold sum_of_quantity">
+                                                        0
+                                                    </td>
+                                                    <td class="fw-bold text-end"></td>
+
                                                 </tr>
                                             </tfoot>
                                         </table>

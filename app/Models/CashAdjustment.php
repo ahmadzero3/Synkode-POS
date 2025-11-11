@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\PaymentTransaction;
+use App\Models\Register;
 
 class CashAdjustment extends Model
 {
@@ -20,6 +21,7 @@ class CashAdjustment extends Model
         'adjustment_type',
         'adjustment_date',
         'payment_type_id',
+        'register_id',
         'amount',
         'note',
     ];
@@ -51,11 +53,16 @@ class CashAdjustment extends Model
         return $this->morphMany(PaymentTransaction::class, 'transaction');
     }
 
+    /**
+     * Relation with register
+     */
+    public function register()
+    {
+        return $this->belongsTo(Register::class, 'register_id');
+    }
+
     public function getTableCode()
     {
         return null;
     }
-
-
-
 }

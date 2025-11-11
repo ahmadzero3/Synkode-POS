@@ -9,7 +9,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 
-
 class RunDatabaseBackup implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -27,7 +26,7 @@ class RunDatabaseBackup implements ShouldQueue
      */
     public function handle()
     {
-        \Artisan::call('backup:run', [
+        Artisan::call('backup:run', [
             '--only-db' => true,
             '--disable-notifications' => true,
         ]);

@@ -26,5 +26,6 @@ return [
 'igst' => 'IGST',
 'gst' => 'GST',
 'taxable_value' => 'القيمة الخاضعة للضريبة',
+'no_tax' => 'لا توجد ضريبة',
 
 ];

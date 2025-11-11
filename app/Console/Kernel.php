@@ -12,7 +12,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Process scheduled backups every hour
+        $schedule->command('backup:process-scheduled')->hourly();
+
+        // License status check every 5 minutes
+        $schedule->command('license:check')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->appendOutputTo(storage_path('logs/license-check.log'));
     }
 
     /**

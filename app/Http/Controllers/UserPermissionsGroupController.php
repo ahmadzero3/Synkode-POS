@@ -127,7 +127,13 @@ class UserPermissionsGroupController extends Controller
                     'status'    => false,
                     'message' => __('app.cannot_delete_records'),
                 ],409);
-            } 
+            } else {
+                // Handle other types of database exceptions
+                return response()->json([
+                    'status'    => false,
+                    'message' => __('app.unexpected_error_occurred'),
+                ],500);
+            }
         }
     }
 }

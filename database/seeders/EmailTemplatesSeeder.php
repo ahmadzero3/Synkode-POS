@@ -121,7 +121,7 @@ Sincerely,
 [Your Mobile Number]
 EOT;
 
-$keys = <<<EOT
+        $keys = <<<EOT
 [Order Number]
 
 [Customer Name]
@@ -183,7 +183,7 @@ Sincerely,
 [Your Mobile Number]
 EOT;
 
-$keys = <<<EOT
+        $keys = <<<EOT
 [Return Number]
 
 [Customer Name]
@@ -266,7 +266,7 @@ EOT;
         ]);
 
 
-/**
+        /**
          * PURCHASE ORDER
          * 
          * */
@@ -300,7 +300,7 @@ Sincerely,
 [Your Mobile Number]
 EOT;
 
-$keys = <<<EOT
+        $keys = <<<EOT
 [Order Number]
 
 [Customer Name]
@@ -330,7 +330,7 @@ EOT;
             'delete_flag'           => 1,
         ]);
 
-/**
+        /**
          * SALE ORDER
          * 
          * */
@@ -362,7 +362,7 @@ Sincerely,
 [Your Mobile Number]
 EOT;
 
-$keys = <<<EOT
+        $keys = <<<EOT
 [Return Number]
 
 [Supplier Name]
@@ -389,6 +389,5 @@ EOT;
             'keys'                  => $keys,
             'delete_flag'           => 1,
         ]);
-
     }
 }

@@ -1,77 +1,82 @@
 @extends('layouts.app')
 @section('title', __('currency.create'))
 
-        @section('content')
-        <!--start page wrapper -->
-        <div class="page-wrapper">
-            <div class="page-content">
-                <x-breadcrumb :langArray="[
-                                            'app.settings',
-                                            'currency.currencies',
-                                            'currency.create',
-                                        ]"/>
-                <div class="row">
-                    <div class="col-12 col-lg-6">
-                        @include('layouts.session')
-                        <div class="card">
-                            <div class="card-header px-4 py-3">
-                                <h5 class="mb-0">{{ __('currency.details') }}</h5>
-                            </div>
-                            <div class="card-body p-4">
-                                <form class="row g-3 needs-validation" id="currencyForm" action="{{ route('currency.store') }}" enctype="multipart/form-data">
-                                    {{-- CSRF Protection --}}
-                                    @csrf
-                                    @method('POST')
+@section('content')
+    <!--start page wrapper -->
+    <div class="page-wrapper">
+        <div class="page-content">
+            <x-breadcrumb :langArray="[
+            'app.settings',
+            'currency.currencies',
+            'currency.create',
+        ]" />
+            <div class="row">
+                <!-- 🔹 changed from col-lg-6 to col-12 to make card full width -->
+                <div class="col-12">
+                    @include('layouts.session')
+                    <div class="card w-100">
+                        <div class="card-header px-4 py-3">
+                            <h5 class="mb-0">{{ __('currency.details') }}</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form class="row g-3 needs-validation" id="currencyForm" action="{{ route('currency.store') }}"
+                                enctype="multipart/form-data">
+                                {{-- CSRF Protection --}}
+                                @csrf
+                                @method('POST')
 
-                                    <input type="hidden" id="base_url" value="{{ url('/') }}">
+                                <input type="hidden" id="base_url" value="{{ url('/') }}">
 
-                                    <div class="col-md-12">
-                                        <x-label for="name" name="{{ __('app.name') }}" />
-                                        <x-input type="text" name="name" :required="true" value="" :autofocus='true'/>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <x-label for="code" name="{{ __('app.short_code') }}" />
-                                        <x-input type="text" name="code" :required="true" placeholder="USD | INR | KWD" value="" :minlength=3 :maxlength=3 />
-                                        <small class="text-end">
-                                        Click here for <a href="https://taxsummaries.pwc.com/glossary/currency-codes" target="_blank">Currency code (ISO 4217)</a> use only<b>3 letters</b>.
-                                        </small>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <x-label for="name" name="{{ __('currency.symbol') }}" />
-                                        <x-input type="text" name="symbol" :required="true" value="" :autofocus='false'/>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <x-label for="exchange_rate" name="{{ __('currency.exchange_rate') }}" />
-                                        <x-input type="text" additionalClasses="cu_numeric" name="exchange_rate" placeholder="0.000000" :required="true" value="" :autofocus='false'/>
-                                    </div>
+                                <div class="col-md-12">
+                                    <x-label for="name" name="{{ __('app.name') }}" />
+                                    <x-input type="text" name="name" :required="true" value="" :autofocus='true' />
+                                </div>
+                                <div class="col-md-12">
+                                    <x-label for="code" name="{{ __('app.short_code') }}" />
+                                    <x-input type="text" name="code" :required="true" placeholder="USD | INR | KWD" value=""
+                                        :minlength=3 :maxlength=3 />
+                                    <small class="text-end">
+                                        Click here for <a href="https://taxsummaries.pwc.com/glossary/currency-codes"
+                                            target="_blank">Currency code (ISO 4217)</a> use only<b>3 letters</b>.
+                                    </small>
+                                </div>
+                                <div class="col-md-12">
+                                    <x-label for="name" name="{{ __('currency.symbol') }}" />
+                                    <x-input type="text" name="symbol" :required="true" value="" :autofocus='false' />
+                                </div>
+                                <div class="col-md-12">
+                                    <x-label for="exchange_rate" name="{{ __('currency.exchange_rate') }}" />
+                                    <x-input type="text" additionalClasses="cu_numeric" name="exchange_rate"
+                                        placeholder="0.000000" :required="true" value="" :autofocus='false' />
+                                </div>
 
-                                    <div class="col-md-12 d-none">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="is_company_currency" name="is_company_currency">
-                                            <label class="form-check-label" for="is_company_currency">
-                                              {{ __('currency.set_as_company_currency') }}
-                                            </label>
-                                          </div>
+                                <div class="col-md-12 d-none">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_company_currency"
+                                            name="is_company_currency">
+                                        <label class="form-check-label" for="is_company_currency">
+                                            {{ __('currency.set_as_company_currency') }}
+                                        </label>
                                     </div>
+                                </div>
 
-                                    <div class="col-md-12">
-                                        <div class="d-md-flex d-grid align-items-center gap-3 justify-content-end">
-                                            <x-button type="submit" class="primary px-4" text="{{ __('app.submit') }}" />
-                                            <x-anchor-tag href="{{ route('dashboard') }}" text="{{ __('app.close') }}" class="btn btn-light px-4" />
-                                        </div>
+                                <div class="col-md-12">
+                                    <div class="d-md-flex d-grid align-items-center gap-3 justify-content-end">
+                                        <x-button type="submit" class="primary px-4" text="{{ __('app.submit') }}" />
+                                        <x-anchor-tag href="{{ route('dashboard') }}" text="{{ __('app.close') }}"
+                                            class="btn btn-light px-4" />
                                     </div>
-                                </form>
-                            </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
-                <!--end row-->
             </div>
+            <!--end row-->
         </div>
-
-
-        @endsection
+    </div>
+@endsection
 
 @section('js')
-<script src="{{ versionedAsset('custom/js/currency/currency.js') }}"></script>
+    <script src="{{ versionedAsset('custom/js/currency/currency.js') }}"></script>
 @endsection

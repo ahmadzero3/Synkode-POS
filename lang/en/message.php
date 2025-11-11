@@ -45,5 +45,6 @@ return [
     'update_template'                           => "Update Template",
     'attachment'                                => "Attachment",
     'auto_attach_invoice'                       => "Auto Attach Invoice/Bill",
+    'no_items_added'                            => 'No items added yet!',
 
 ];

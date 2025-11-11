@@ -27,7 +27,7 @@
                                 <div class="card-body p-4 row g-3">
                                         <div class="col-md-6 mb-3">
                                             <x-label for="party_id" name="{{ __('customer.customer') }}" />
-                                            <select class="form-select party-ajax" data-party-type='Customer' data-placeholder="Select Customer" id="party_id" name="party_id"></select>
+                                            <select class="form-select party-ajax" data-party-type='customer' data-placeholder="Select Customer" id="party_id" name="party_id"></select>
                                         </div>
                                 </div>
 
@@ -65,7 +65,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="duePaymentReport">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('customer.customer') }}</th>
                                                         <th>{{ __('payment.due_payment') }}</th>

@@ -23,6 +23,7 @@ return [
     'default'                   => 'Default Warehouse',
     'allow_all_warehouses'      => 'Allow All Warehouses',
     'user_wise_warehouses_records'      => 'If you leave it empty, records will still be shown based on users allocated warehouses!',
+    'branch' => 'Branch',
     //2.3.2
     'stock_adjustment'           => 'Stock Adjustment',
     'stock_adjustment_list'      => 'Stock Adjustment List',

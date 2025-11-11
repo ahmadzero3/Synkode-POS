@@ -65,7 +65,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="duePaymentReport">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('supplier.supplier') }}</th>
                                                         <th>{{ __('payment.due_payment') }}</th>

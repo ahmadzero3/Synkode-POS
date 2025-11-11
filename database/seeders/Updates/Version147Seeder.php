@@ -34,54 +34,12 @@ class Version147Seeder extends Seeder
 
     public function updatePermissions()
     {
-       //
+        //
     }
 
     public function addNewPermissions()
     {
-
-        $permissionGroupId = PermissionGroup::firstOrCreate(['name' => 'Currency'])->id;
-
-        $reportPermissionsArray = [
-            [
-                'name'          =>'currency.create',
-                'display_name'  =>'Create',
-                'permission_group_id'  => $permissionGroupId,
-            ],
-            [
-                'name'          =>'currency.edit',
-                'display_name'  =>'Edit',
-                'permission_group_id'  => $permissionGroupId,
-            ],
-            [
-                'name'          =>'currency.view',
-                'display_name'  =>'View',
-                'permission_group_id'  => $permissionGroupId,
-            ],
-            [
-                'name'          =>'currency.delete',
-                'display_name'  =>'Delete',
-                'permission_group_id'  => $permissionGroupId,
-            ],
-
-
-        ];
-
-        foreach ($reportPermissionsArray as $permission) {
-            //Validate is the permission exist
-            $isPermssionExist = Permission::where('name', $permission['name'])->count();
-            $isPermssionExist = $isPermssionExist>0 ? true : false;
-
-            if(!$isPermssionExist){
-                Permission::firstOrCreate([
-                                        'name' => $permission['name'],
-                                        'display_name' => $permission['display_name'],
-                                        'permission_group_id' => $permission['permission_group_id'],
-                                        'status' => 1,
-                                    ]);
-            }//if
-
-        }//foreach
+        //foreach
 
         //update other is_company_currency 0
         //Currency::query()->update(['is_company_currency' => 0]);
@@ -90,12 +48,12 @@ class Version147Seeder extends Seeder
         Currency::firstOrCreate(
             ['code' => 'USD'],
             [
-            'name' => 'US Dollar',
-            'symbol' => '$',
-            'exchange_rate' => 1,
-            'is_company_currency' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+                'name' => 'US Dollar',
+                'symbol' => '$',
+                'exchange_rate' => 1,
+                'is_company_currency' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]
         );
 
@@ -113,6 +71,5 @@ class Version147Seeder extends Seeder
         PurchaseOrder::query()->update(['currency_id' => $companyCurrency->id, 'exchange_rate' => $companyCurrency->exchange_rate]);
         PurchaseReturn::query()->update(['currency_id' => $companyCurrency->id, 'exchange_rate' => $companyCurrency->exchange_rate]);
         Party::query()->update(['currency_id' => $companyCurrency->id, 'exchange_rate' => $companyCurrency->exchange_rate]);
-
     }
 }

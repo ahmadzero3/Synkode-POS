@@ -22,10 +22,10 @@ class ServiceController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create()  {
+    public function create()
+    {
 
         return view('service.create');
-
     }
 
     /**
@@ -34,7 +34,8 @@ class ServiceController extends Controller
      * @param int $id The ID of the service to edit.
      * @return \Illuminate\View\View
      */
-    public function edit($id) : View {
+    public function edit($id): View
+    {
 
         $service = Service::find($id);
 
@@ -44,7 +45,8 @@ class ServiceController extends Controller
     /**
      * Return JsonResponse
      * */
-    public function store(ServiceRequest $request)  {
+    public function store(ServiceRequest $request)
+    {
 
         $filename = null;
 
@@ -73,7 +75,8 @@ class ServiceController extends Controller
     /**
      * Return JsonResponse
      * */
-    public function update(ServiceRequest $request) : JsonResponse {
+    public function update(ServiceRequest $request): JsonResponse
+    {
         $validatedData = $request->validated();
 
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
@@ -88,7 +91,8 @@ class ServiceController extends Controller
         ]);
     }
 
-    private function uploadImage($image) : String{
+    private function uploadImage($image): String
+    {
         // Generate a unique filename for the image
         $filename = uniqid() . '.' . $image->getClientOriginalExtension();
 
@@ -105,54 +109,57 @@ class ServiceController extends Controller
         return $filename;
     }
 
-    public function list() : View {
+    public function list(): View
+    {
         return view('service.list');
     }
 
-    public function datatableList(Request $request){
+    public function datatableList(Request $request)
+    {
 
         $data = Service::with('tax');
 
         return DataTables::of($data)
-                    ->addIndexColumn()
-                    ->addColumn('created_at', function ($row) {
-                        return $row->created_at->format(app('company')['date_format']);
-                    })
-                    ->addColumn('tax_name', function ($row) {
-                        return $row->tax->name;
-                    })
-                    ->addColumn('tax_type', function ($row) {
-                        return ucfirst($row->tax_type);
-                    })
-                    ->addColumn('username', function ($row) {
-                        return $row->user->username??'';
-                    })
-                    ->addColumn('action', function($row){
-                            $id = $row->id;
+            ->addIndexColumn()
+            ->addColumn('created_at', function ($row) {
+                return $row->created_at->format(app('company')['date_format']);
+            })
+            ->addColumn('tax_name', function ($row) {
+                return $row->tax->name;
+            })
+            ->addColumn('tax_type', function ($row) {
+                return ucfirst($row->tax_type);
+            })
+            ->addColumn('username', function ($row) {
+                return $row->user->username ?? '';
+            })
+            ->addColumn('action', function ($row) {
+                $id = $row->id;
 
-                            $editUrl = route('service.edit', ['id' => $id]);
-                            $deleteUrl = route('service.delete', ['id' => $id]);
+                $editUrl = route('service.edit', ['id' => $id]);
+                $deleteUrl = route('service.delete', ['id' => $id]);
 
 
-                            $actionBtn = '<div class="dropdown ms-auto">
+                $actionBtn = '<div class="dropdown ms-auto">
                             <a class="dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded font-22 text-option"></i>
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> '.__('app.edit').'</a>
+                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> ' . __('app.edit') . '</a>
                                 </li>
                                 <li>
-                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id='.$id.'><i class="bx bx-trash"></i> '.__('app.delete').'</button>
+                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id=' . $id . '><i class="bx bx-trash"></i> ' . __('app.delete') . '</button>
                                 </li>
                             </ul>
                         </div>';
-                            return $actionBtn;
-                    })
-                    ->rawColumns(['action'])
-                    ->make(true);
+                return $actionBtn;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
-    public function delete(Request $request) : JsonResponse{
+    public function delete(Request $request): JsonResponse
+    {
 
         $selectedRecordIds = $request->input('record_ids');
 
@@ -163,9 +170,8 @@ class ServiceController extends Controller
                 // Invalid record ID, handle the error (e.g., show a message, log, etc.)
                 return response()->json([
                     'status'    => false,
-                    'message' => __('app.invalid_record_id',['record_id' => $recordId]),
+                    'message' => __('app.invalid_record_id', ['record_id' => $recordId]),
                 ]);
-
             }
             // You can perform additional validation checks here if needed before deletion
         }
@@ -174,7 +180,7 @@ class ServiceController extends Controller
          * All selected record IDs are valid, proceed with the deletion
          * Delete all records with the selected IDs in one query
          * */
-        
+
 
         try {
             // Attempt deletion (as in previous responses)
@@ -188,8 +194,14 @@ class ServiceController extends Controller
                 return response()->json([
                     'status'    => false,
                     'message' => __('app.cannot_delete_records'),
-                ],409);
-            } 
+                ], 409);
+            } else {
+                // Handle other types of database exceptions
+                return response()->json([
+                    'status'    => false,
+                    'message' => __('app.unexpected_error_occurred'),
+                ], 500);
+            }
         }
     }
 
@@ -197,21 +209,22 @@ class ServiceController extends Controller
      * Get Service Records
      * @return JsonResponse
      * */
-     function getRecords(Request $request): JsonResponse{
+    function getRecords(Request $request): JsonResponse
+    {
         $selectedRecordId = $request->input('service_id');
 
         $record = Service::where('id', $selectedRecordId)
-                               ->select('id', 'name', 'description', 'unit_price', 'tax_id', 'tax_type', 'status')
-                               ->first();
+            ->select('id', 'name', 'description', 'unit_price', 'tax_id', 'tax_type', 'status')
+            ->first();
         /**
          * If no records
          * @return JsonResponse 
          * */
-        if($record->count() == 0){
+        if ($record->count() == 0) {
             return response()->json([
-                    'status'    => false,
-                    'message' => __('app.record_not_found'),
-                ]);
+                'status'    => false,
+                'message' => __('app.record_not_found'),
+            ]);
         }
         /**
          * Return JsonResponse with Actual Records
@@ -220,7 +233,7 @@ class ServiceController extends Controller
         $preparedData = [
             'id'                => $record->id,
             'name'              => $record->name,
-            'description'       => $record->description??'',
+            'description'       => $record->description ?? '',
             'quantity'          => 1,
             'unit_price'        => $record->unit_price,
             'total_price'       => $record->total_price,
@@ -234,15 +247,15 @@ class ServiceController extends Controller
             'tax_type'          => $record->tax_type,
             'tax_amount'        => 0,
             'status'            => $record->status,
-            'assigned_user_id'  => $record->assigned_user_id??'',
-            'assigned_user_note' => $record->assigned_user_note??'',
+            'assigned_user_id'  => $record->assigned_user_id ?? '',
+            'assigned_user_note' => $record->assigned_user_note ?? '',
             'taxList'           => Tax::all(),
         ];
-        
+
         return response()->json([
-                    'status'    => true,
-                    'message' => null,
-                    'data' => $preparedData,
-                ]);
-     }
+            'status'    => true,
+            'message' => null,
+            'data' => $preparedData,
+        ]);
+    }
 }

@@ -25,6 +25,7 @@ return [
     'allow_all_warehouses'      => 'السماح بجميع المستودعات',
 
     'user_wise_warehouses_records'  => 'سجلات المستودعات حسب المستخدم',
+    'branch' => 'الفرع',
 
     //2.3.2
     'stock_adjustment'           => 'تسوية المخزون',

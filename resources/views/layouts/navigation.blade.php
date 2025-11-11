@@ -104,7 +104,7 @@
                         </li>
                     @endcan
 
-                    @can('sale.invoice.view')
+                    @can('sale.bill.view')
                         <li class="{{ request()->is('sale/invoice/*') ? 'mm-active' : '' }}">
                             <a href="{{ route('sale.invoice.list') }}"><i
                                     class='bx bx-radio-circle'></i>{{ __('sale.invoices') }}</a>
@@ -258,6 +258,7 @@
                             </li>
                         @endcan
                     @endif
+
                 </ul>
             </li>
         @endcanany
@@ -321,9 +322,14 @@
                 </li>
             @endcanany
         @endif
-        <li class="menu-label">CORE</li>
 
-        @canany(['transaction.cash.view', 'transaction.cheque.view', 'transaction.bank.view'])
+        @canany(['transaction.cash.view', 'warehouse.view', 'user.view', 'sms.create', 'email.create', 'report.sale',
+            'app.settings.edit', 'transaction.cash.close', 'transaction.cash.close.list'])
+            <li class="menu-label">{{ __('app.core') }}</li>
+        @endcanany
+
+        @canany(['transaction.cash.view', 'transaction.cheque.view', 'transaction.bank.view', 'transaction.cash.close',
+            'transaction.cash.close.list'])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-wallet-alt"></i>
@@ -336,11 +342,17 @@
                             <a href="{{ route('transaction.cash.list') }}"><i
                                     class='bx bx-radio-circle'></i>{{ __('payment.cash_in_hand') }}</a>
                         </li>
+                    @endcan
+
+                    @can('transaction.cash.close')
                         <li class="{{ request()->is('transaction/cash/close') ? 'mm-active' : '' }}">
                             <a href="{{ route('transaction.close-cash') }}">
                                 <i class='bx bx-radio-circle'></i>{{ __('app.close_cash') }}
                             </a>
                         </li>
+                    @endcan
+
+                    @can('transaction.cash.close.list')
                         <li class="{{ request()->routeIs('close.cash.list', 'close-cash.edit') ? 'mm-active' : '' }}">
                             <a href="{{ route('close.cash.list') }}">
                                 <i class="bx bx-radio-circle"></i>
@@ -387,13 +399,13 @@
                                     class='bx bx-radio-circle'></i>{{ __('warehouse.stock_transfer') }}</a>
                         </li>
                     @endcan
-
                     @can('stock_adjustment.view')
                         <li class="{{ request()->is('stock-adjustment/*') ? 'mm-active' : '' }}">
                             <a href="{{ route('stock_adjustment.list') }}"><i
                                     class='bx bx-radio-circle'></i>{{ __('warehouse.adjustment') }}</a>
                         </li>
                     @endcan
+
                 </ul>
             </li>
         @endcanany
@@ -454,7 +466,7 @@
             </li>
         @endcanany
 
-        @canany(['profile.edit', 'user.view', 'role.view', 'permission.view', 'permission.group.view'])
+        @canany(['profile.edit', 'user.view', 'role.view', 'permission.view', 'permission.group.view', 'register.view'])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-group"></i>
@@ -478,6 +490,21 @@
                         <li class="{{ request()->is('role-and-permission/role*') ? 'mm-active' : '' }}">
                             <a href="{{ route('roles.list') }}"><i
                                     class='bx bx-radio-circle'></i>{{ __('app.roles') }}</a>
+                        </li>
+                    @endcan
+
+                    @can('session.view')
+                        <li class="{{ request()->is('session/*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('session.list') }}">
+                                <i class='bx bx-radio-circle'></i>{{ __('app.session') }}
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('register.view')
+                        <li class="{{ request()->is(['register/*']) ? 'mm-active' : '' }}">
+                            <a href="{{ route('register.list') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('register.registers') }}</a>
                         </li>
                     @endcan
                 </ul>
@@ -773,6 +800,26 @@
                         </li>
                     @endcanany
 
+                    @canany(['report.stock_adjustment', 'report.stock_adjustment.item'])
+                        <li> <a class="has-arrow" href="javascript:;"><i
+                                    class='bx bx-radio-circle'></i>{{ __('warehouse.stock_adjustment') }}</a>
+                            <ul>
+                                @can('report.stock_adjustment')
+                                    <li class="{{ request()->is('report/stock-adjustment') ? 'mm-active' : '' }}">
+                                        <a href="{{ route('report.stock_adjustment') }}"><i
+                                                class='bx bx-radio-circle'></i>{{ __('warehouse.stock_adjustment') }}</a>
+                                    </li>
+                                @endcan
+                                @can('report.stock_adjustment.item')
+                                    <li class="{{ request()->is('report/stock-adjustment/item') ? 'mm-active' : '' }}">
+                                        <a href="{{ route('report.stock_adjustment.item') }}"><i
+                                                class='bx bx-radio-circle'></i>{{ __('item.item_wise') }}</a>
+                                    </li>
+                                @endcan
+                            </ul>
+                        </li>
+                    @endcanany
+
                     @canany(['report.stock_report.*'])
                         <li> <a class="has-arrow" href="javascript:;"><i
                                     class='bx bx-radio-circle'></i>{{ __('item.stock_report') }}&nbsp;</a>
@@ -806,11 +853,12 @@
                         </li>
                     @endcan
 
-                    <!---@can('report.reorder.item')
-        <li class="{{ request()->is('report/reorder/item') ? 'mm-active' : '' }}">
-         <a href="{{ route('report.reorder.item') }}"><i class='bx bx-radio-circle'></i>{{ __('item.reorder_item_report') }}</a>
-        </li>
-    @endcan---->
+                    @can('report.reorder.item')
+                        <li class="{{ request()->is('report/reorder/item') ? 'mm-active' : '' }}">
+                            <a href="{{ route('report.reorder.item') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('item.reorder_item_report') }}</a>
+                        </li>
+                    @endcan
 
 
 
@@ -900,89 +948,107 @@
                                     class='bx bx-radio-circle'></i>{{ __('language.languages') }}</a>
                         </li>
                     </ul>
+                @endcanany
+
+                @can('customization.edit')
+<ul>
+    <li class="{{ request()->is('customize/color') ? 'mm-active' : '' }}">
+        <a href="{{ route('customize.edit') }}">
+            <i class='bx bx-radio-circle'></i>{{ __('Customization') }}
+        </a>
+    </li>
+</ul>
+@endcan
+
+                @can('app.log.view')
                     <ul>
-                        <li class="{{ request()->is('customize/color') ? 'mm-active' : '' }}">
-                            <a href="{{ route('customize.edit') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('Customization') }}</a>
+                        <li class="{{ request()->is('app-log/*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('app.log.list') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('app.app_log') }}</a>
                         </li>
                     </ul>
-                @endcanany
+                @endcan
+
+                @can('database.backup.view')
+                    <ul>
+                        <li class="{{ request()->is('database-backup/list') ? 'mm-active' : '' }}">
+                            <a href="{{ route('database.backup.list') }}">
+                                <i class='bx bx-radio-circle'></i>{{ __('app.backup_database') }}
+                            </a>
+                        </li>
+                    </ul>
+                @endcan
+
+
             </li>
         @endcanany
 
-        <li class="menu-label">OTHER</li>
+        @canany(['system.clear_cache', 'system.database_backup'])
+            <li class="menu-label">{{ __('app.other') }}</li>
+        @endcanany
 
-        <ul>
-            <li class="bg-light">
-                <a href="javascript:void(0);" id="clearCache">
-                    <div class="parent-icon text-primary"><i class='bx bx-refresh '></i>
+        @can('system.clear_cache')
+            <ul>
+                <li class="bg-light">
+                    <a href="javascript:void(0);" id="clearCache">
+                        <div class="parent-icon text-primary"><i class='bx bx-refresh '></i>
+                        </div>
+                        <div class="menu-title">{{ __('app.clear_cache') }}</div>
+                    </a>
+                </li>
+            </ul>
+        @endcan
+
+        @can('system.database_backup')
+            {{-- hidden backup form --}}
+            <form class="row g-3 needs-validation" id="databaseForm" action="{{ route('database.backup') }}"
+                enctype="multipart/form-data" method="post" style="display: none;">
+                {{-- CSRF Protection --}}
+                @csrf
+
+                <div class="col-md-12">
+                    <div class="d-md-flex d-grid align-items-center gap-3">
+                        <x-button type="submit" buttonId="databaseSubmit" class="primary px-4"
+                            text="{{ __('app.backup_database') }}" />
                     </div>
-                    <div class="menu-title">{{ __('app.clear_cache') }}</div>
-                </a>
-            </li>
-        </ul>
-
-        {{-- hidden backup form --}}
-        <form class="row g-3 needs-validation" id="databaseForm" action="{{ route('database.backup') }}"
-            enctype="multipart/form-data" method="post" style="display: none;">
-            {{-- CSRF Protection --}}
-            @csrf
-
-            <div class="col-md-12">
-                <div class="d-md-flex d-grid align-items-center gap-3">
-                    <x-button type="submit" buttonId="databaseSubmit" class="primary px-4"
-                        text="{{ __('app.backup_database') }}" />
                 </div>
-            </div>
-        </form>
+            </form>
 
-        <ul>
+            <ul>
+                <li class="bg-light">
+                    <a href="javascript:void(0);" id="databaseSubmit">
+                        <div class="parent-icon text-primary">
+                            <i class='bx bx-data'></i>
+                        </div>
+                        <div class="menu-title">
+                            {{ __('app.backup_database') }}
+                        </div>
+                    </a>
+                </li>
+            </ul>
 
-            <li class="bg-light">
-                <a href="javascript:void(0);" id="databaseSubmit">
-                    <div class="parent-icon text-primary">
-                        <i class='bx bx-data'></i>
-                    </div>
-                    <div class="menu-title">
-                        {{ __('app.backup_database') }}
-                    </div>
-                </a>
-            </li>
-        </ul>
+            {{-- JS glue to submit the hidden form when the menu item is clicked --}}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const downloadLink = document.querySelector('li.bg-light a#databaseSubmit');
+                    const downloadForm = document.getElementById('databaseForm');
 
-        {{-- JS glue to submit the hidden form when the menu item is clicked --}}
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const downloadLink = document.querySelector('li.bg-light a#databaseSubmit');
-                const downloadForm = document.getElementById('databaseForm');
+                    if (!downloadLink) {
+                        console.error('Download link not found');
+                        return;
+                    }
+                    if (!downloadForm) {
+                        console.error('Form with id="databaseForm" not found');
+                        return;
+                    }
 
-                if (!downloadLink) {
-                    console.error('Download link not found');
-                    return;
-                }
-                if (!downloadForm) {
-                    console.error('Form with id="databaseForm" not found');
-                    return;
-                }
-
-                downloadLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    downloadForm.submit();
+                    downloadLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        downloadForm.submit();
+                    });
                 });
-            });
-        </script>
-
-
-
-        @if (config('demo.enabled'))
-            <li class="bg-light">
-                <a href="https://delta.creatantech.com/documentation" target="_blank">
-                    <div class="parent-icon text-primary"><i class='bx bx-folder '></i>
-                    </div>
-                    <div class="menu-title">{{ __('app.documentation') }}</div>
-                </a>
-            </li>
-        @endif
+            </script>
+        @endcan
 
         <li>
             <a href="{{ route('logout') }}"

@@ -25,17 +25,18 @@ return [
     'ledger'                        => 'Ledger',
 
     'group' => [
-                    'group'         => 'Account Group',
-                    'create'        => 'Create Group',
-                    'list'          => 'Group List',
-                    'details'       => 'Account Group Details',
-                    'under'         => 'Under Group',
-                    'group_list'    => 'Account Group List',
-                    'parent'        => 'Parent Group',
-                    'update'        => 'Update Group',
-                ],
+        'group'         => 'Account Group',
+        'create'        => 'Create Group',
+        'list'          => 'Group List',
+        'details'       => 'Account Group Details',
+        'under'         => 'Under Group',
+        'group_list'    => 'Account Group List',
+        'parent'        => 'Parent Group',
+        'update'        => 'Update Group',
+    ],
     //1.4.3
     'net_summary'                    => 'Net Summary',
+
     //2.4.1
     'item_wise'                   => 'Item Wise',
     'invoice_wise'                   => 'Invoice Wise',
@@ -54,7 +55,5 @@ return [
     'customer_wise_profit_and_loss' => 'Customer Wise Profit and Loss',
     'use_only_selected_date_range' => 'Use Sale Average from the selected date range only',
     'use_only_selected_date_range_tooltip' => 'If unchecked, average sale is calculated from all invoices.',
-
-
 
 ];

@@ -58,15 +58,15 @@ class SaleReturnController extends Controller
 
     public $itemService;
 
-    public function __construct(PaymentTypeService $paymentTypeService,
-                                PaymentTransactionService $paymentTransactionService,
-                                AccountTransactionService $accountTransactionService,
-                                ItemTransactionService $itemTransactionService,
-                                SaleReturnEmailNotificationService $saleReturnEmailNotificationService,
-                                SaleReturnSmsNotificationService $saleReturnSmsNotificationService,
-                                ItemService $itemService
-                            )
-    {
+    public function __construct(
+        PaymentTypeService $paymentTypeService,
+        PaymentTransactionService $paymentTransactionService,
+        AccountTransactionService $accountTransactionService,
+        ItemTransactionService $itemTransactionService,
+        SaleReturnEmailNotificationService $saleReturnEmailNotificationService,
+        SaleReturnSmsNotificationService $saleReturnSmsNotificationService,
+        ItemService $itemService
+    ) {
         $this->companyId = App::APP_SETTINGS_RECORD_ID->value;
         $this->paymentTypeService = $paymentTypeService;
         $this->paymentTransactionService = $paymentTransactionService;
@@ -83,21 +83,23 @@ class SaleReturnController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create(): View  {
+    public function create(): View
+    {
         $prefix = Prefix::findOrNew($this->companyId);
         $lastCountId = $this->getLastCountId();
         $selectedPaymentTypesArray = json_encode($this->paymentTypeService->selectedPaymentTypesArray());
         $data = [
             'prefix_code' => $prefix->sale_return,
-            'count_id' => ($lastCountId+1),
+            'count_id' => ($lastCountId + 1),
         ];
-        return view('sale.return.create',compact('data', 'selectedPaymentTypesArray'));
+        return view('sale.return.create', compact('data', 'selectedPaymentTypesArray'));
     }
 
     /**
      * Get last count ID
      * */
-    public function getLastCountId(){
+    public function getLastCountId()
+    {
         return SaleReturn::select('count_id')->orderBy('id', 'desc')->first()?->count_id ?? 0;
     }
 
@@ -106,7 +108,8 @@ class SaleReturnController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function list() : View {
+    public function list(): View
+    {
         return view('sale.return.list');
     }
 
@@ -117,7 +120,8 @@ class SaleReturnController extends Controller
      * @param int $id The ID of the expense to edit.
      * @return \Illuminate\View\View
      */
-    public function convertToSaleReturn($id) : View | RedirectResponse {
+    public function convertToSaleReturn($id): View | RedirectResponse
+    {
 
         //Validate Existance of Converted Sale Orders
         // $convertedBill = SaleReturn::where('sale_id', $id)->first();
@@ -129,13 +133,15 @@ class SaleReturnController extends Controller
         //     //Already Converted, Redirect it.
         //     return redirect()->route('sale.return.details', ['id' => $convertedBill->id]);
         // }
-        $return = Sale::with(['party',
-                                        'itemTransaction' => [
-                                            'item',
-                                            'tax',
-                                            'batch.itemBatchMaster',
-                                            'itemSerialTransaction.itemSerialMaster'
-                                        ]])->findOrFail($id);
+        $return = Sale::with([
+            'party',
+            'itemTransaction' => [
+                'item',
+                'tax',
+                'batch.itemBatchMaster',
+                'itemSerialTransaction.itemSerialMaster'
+            ]
+        ])->findOrFail($id);
         // Add formatted dates from ItemBatchMaster model
         $return->itemTransaction->each(function ($transaction) {
             if (!$transaction->batch?->itemBatchMaster) {
@@ -156,7 +162,7 @@ class SaleReturnController extends Controller
         $prefix = Prefix::findOrNew($this->companyId);
         $lastCountId = $this->getLastCountId();
         $return->prefix_code = $prefix->sale_return;
-        $return->count_id = ($lastCountId+1);
+        $return->count_id = ($lastCountId + 1);
 
         $return->formatted_return_date = $this->toUserDateFormat(date('Y-m-d'));
 
@@ -164,7 +170,7 @@ class SaleReturnController extends Controller
         // Prepare item transactions with associated units
         $allUnits = CacheService::get('unit');
 
-        $itemTransactions = $return->itemTransaction->map(function ($transaction) use ($allUnits ) {
+        $itemTransactions = $return->itemTransaction->map(function ($transaction) use ($allUnits) {
             $itemData = $transaction->toArray();
 
             // Use the getOnlySelectedUnits helper function
@@ -198,23 +204,26 @@ class SaleReturnController extends Controller
 
         $paymentHistory = [];
 
-        return view('sale.return.edit', compact('taxList', 'return', 'itemTransactionsJson','selectedPaymentTypesArray', 'paymentHistory'));
+        return view('sale.return.edit', compact('taxList', 'return', 'itemTransactionsJson', 'selectedPaymentTypesArray', 'paymentHistory'));
     }
 
-     /**
+    /**
      * Edit a SaleReturn.
      *
      * @param int $id The ID of the expense to edit.
      * @return \Illuminate\View\View
      */
-    public function edit($id) : View {
-        $return = SaleReturn::with(['party',
-                                        'itemTransaction' => [
-                                            'item',
-                                            'tax',
-                                            'batch.itemBatchMaster',
-                                            'itemSerialTransaction.itemSerialMaster'
-                                        ]])->findOrFail($id);
+    public function edit($id): View
+    {
+        $return = SaleReturn::with([
+            'party',
+            'itemTransaction' => [
+                'item',
+                'tax',
+                'batch.itemBatchMaster',
+                'itemSerialTransaction.itemSerialMaster'
+            ]
+        ])->findOrFail($id);
         $return->operation = 'update';
 
         // Add formatted dates from ItemBatchMaster model
@@ -231,7 +240,7 @@ class SaleReturnController extends Controller
         // Prepare item transactions with associated units
         $allUnits = CacheService::get('unit');
 
-        $itemTransactions = $return->itemTransaction->map(function ($transaction) use ($allUnits ) {
+        $itemTransactions = $return->itemTransaction->map(function ($transaction) use ($allUnits) {
             $itemData = $transaction->toArray();
 
             // Use the getOnlySelectedUnits helper function
@@ -265,7 +274,7 @@ class SaleReturnController extends Controller
 
         $taxList = CacheService::get('tax')->toJson();
 
-        return view('sale.return.edit', compact('taxList', 'return', 'itemTransactionsJson','selectedPaymentTypesArray', 'paymentHistory'));
+        return view('sale.return.edit', compact('taxList', 'return', 'itemTransactionsJson', 'selectedPaymentTypesArray', 'paymentHistory'));
     }
 
     /**
@@ -274,15 +283,18 @@ class SaleReturnController extends Controller
      * @param int $id, the ID of the order
      * @return \Illuminate\View\View
      */
-    public function details($id) : View {
+    public function details($id): View
+    {
 
-        $return = SaleReturn::with(['party',
-                                        'itemTransaction' => [
-                                            'item',
-                                            'tax',
-                                            'batch.itemBatchMaster',
-                                            'itemSerialTransaction.itemSerialMaster'
-                                        ]])->findOrFail($id);
+        $return = SaleReturn::with([
+            'party',
+            'itemTransaction' => [
+                'item',
+                'tax',
+                'batch.itemBatchMaster',
+                'itemSerialTransaction.itemSerialMaster'
+            ]
+        ])->findOrFail($id);
 
         //Payment Details
         $selectedPaymentTypesArray = json_encode($this->paymentTransactionService->getPaymentRecordsArray($return));
@@ -290,7 +302,7 @@ class SaleReturnController extends Controller
         //Batch Tracking Row count for invoice columns setting
         $batchTrackingRowCount = (new GeneralDataService())->getBatchTranckingRowCount();
 
-        return view('sale.return.details', compact('return','selectedPaymentTypesArray', 'batchTrackingRowCount'));
+        return view('sale.return.details', compact('return', 'selectedPaymentTypesArray', 'batchTrackingRowCount'));
     }
 
     /**
@@ -299,15 +311,18 @@ class SaleReturnController extends Controller
      * @param int $id, the ID of the sale
      * @return \Illuminate\View\View
      */
-    public function print($id, $isPdf = false) : View {
+    public function print($id, $isPdf = false): View
+    {
 
-        $sale = SaleReturn::with(['party',
-                                        'itemTransaction' => [
-                                            'item',
-                                            'tax',
-                                            'batch.itemBatchMaster',
-                                            'itemSerialTransaction.itemSerialMaster'
-                                        ]])->findOrFail($id);
+        $sale = SaleReturn::with([
+            'party',
+            'itemTransaction' => [
+                'item',
+                'tax',
+                'batch.itemBatchMaster',
+                'itemSerialTransaction.itemSerialMaster'
+            ]
+        ])->findOrFail($id);
 
         //Payment Details
         $selectedPaymentTypesArray = json_encode($this->paymentTransactionService->getPaymentRecordsArray($sale));
@@ -319,27 +334,27 @@ class SaleReturnController extends Controller
             'name' => __('sale.debit_note'),
         ];
 
-        return view('print.sale-return.print', compact('isPdf', 'invoiceData', 'sale','selectedPaymentTypesArray','batchTrackingRowCount'));
-
+        return view('print.sale-return.print', compact('isPdf', 'invoiceData', 'sale', 'selectedPaymentTypesArray', 'batchTrackingRowCount'));
     }
 
 
     /**
      * Generate PDF using View: print() method
      * */
-    public function generatePdf($id){
-        $html = $this->print($id, isPdf:true);
+    public function generatePdf($id)
+    {
+        $html = $this->print($id, isPdf: true);
 
         $mpdf = new Mpdf([
-                'mode' => 'utf-8',
-                'format' => 'A4',
-                'margin_left' => 2,
-                'margin_right' => 2,
-                'margin_top' => 2,
-                'margin_bottom' => 2,
-                'default_font' => 'dejavusans',
-                //'direction' => 'rtl',
-            ]);
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 2,
+            'margin_right' => 2,
+            'margin_top' => 2,
+            'margin_bottom' => 2,
+            'default_font' => 'dejavusans',
+            //'direction' => 'rtl',
+        ]);
 
         $mpdf->showImageErrors = true;
         $mpdf->WriteHTML($html);
@@ -349,27 +364,26 @@ class SaleReturnController extends Controller
          * Downloadn PDF
          * 'D'
          * */
-        $mpdf->Output('Sale-Bill-'.$id.'.pdf', 'D');
+        $mpdf->Output('Sale-Bill-' . $id . '.pdf', 'D');
     }
 
     /**
      * Store Records
      * */
-    public function store(SaleReturnRequest $request) : JsonResponse  {
+    public function store(SaleReturnRequest $request): JsonResponse
+    {
         try {
 
             DB::beginTransaction();
             // Get the validated data from the expenseRequest
             $validatedData = $request->validated();
 
-            if($request->operation == 'save' || $request->operation == 'convert'){
+            if ($request->operation == 'save' || $request->operation == 'convert') {
                 // Create a new expense record using Eloquent and save it
                 $newRuturn = SaleReturn::create($validatedData);
 
                 $request->request->add(['return_id' => $newRuturn->id]);
-
-            }
-            else{
+            } else {
                 $fillableColumns = [
                     'party_id'              => $validatedData['party_id'],
                     'return_date'           => $validatedData['return_date'],
@@ -389,10 +403,10 @@ class SaleReturnController extends Controller
                 $newRuturn->update($fillableColumns);
 
                 /**
-                * Before deleting ItemTransaction data take the
-                * old data of the item_serial_master_id
-                * to update the item_serial_quantity
-                * */
+                 * Before deleting ItemTransaction data take the
+                 * old data of the item_serial_master_id
+                 * to update the item_serial_quantity
+                 * */
                 $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($newRuturn);
 
 
@@ -400,7 +414,7 @@ class SaleReturnController extends Controller
                 //$newRuturn->accountTransaction()->delete();
 
                 //Sale Account Update
-                foreach($newRuturn->accountTransaction as $saleAccount){
+                foreach ($newRuturn->accountTransaction as $saleAccount) {
                     //get account if of model with tax accounts
                     $saleAccountId = $saleAccount->account_id;
 
@@ -409,7 +423,7 @@ class SaleReturnController extends Controller
 
                     //Update  account
                     $this->accountTransactionService->calculateAccounts($saleAccountId);
-                }//sale account
+                } //sale account
 
 
                 // Check if paymentTransactions exist
@@ -439,37 +453,37 @@ class SaleReturnController extends Controller
              * Save Table Items in Sale Items Table
              * */
             $SaleItemsArray = $this->saveSaleReturnItems($request);
-            if(!$SaleItemsArray['status']){
+            if (!$SaleItemsArray['status']) {
                 throw new \Exception($SaleItemsArray['message']);
             }
             /**
              * Save Expense Payment Records
              * */
             $salePaymentsArray = $this->saveSaleReturnPayments($request);
-            if(!$salePaymentsArray['status']){
+            if (!$salePaymentsArray['status']) {
                 throw new \Exception($salePaymentsArray['message']);
             }
 
             /**
-            * Payment Should not be less than 0
-            * */
+             * Payment Should not be less than 0
+             * */
             $paidAmount = $newRuturn->refresh('paymentTransaction')->paymentTransaction->sum('amount');
-            if($paidAmount < 0){
+            if ($paidAmount < 0) {
                 throw new \Exception(__('payment.paid_amount_should_not_be_less_than_zero'));
             }
 
             /**
              * Paid amount should not be greater than grand total
              * */
-            if($paidAmount > $newRuturn->grand_total){
-                throw new \Exception(__('payment.payment_should_not_be_greater_than_grand_total')."<br>Paid Amount : ". $this->formatWithPrecision($paidAmount)."<br>Grand Total : ". $this->formatWithPrecision($newRuturn->grand_total). "<br>Difference : ".$this->formatWithPrecision($paidAmount-$newRuturn->grand_total));
+            if ($paidAmount > $newRuturn->grand_total) {
+                throw new \Exception(__('payment.payment_should_not_be_greater_than_grand_total') . "<br>Paid Amount : " . $this->formatWithPrecision($paidAmount) . "<br>Grand Total : " . $this->formatWithPrecision($newRuturn->grand_total) . "<br>Difference : " . $this->formatWithPrecision($paidAmount - $newRuturn->grand_total));
             }
 
             /**
              * Update Sale Model
              * Total Paid Amunt
              * */
-            if(!$this->paymentTransactionService->updateTotalPaidAmountInModel($request->modelName)){
+            if (!$this->paymentTransactionService->updateTotalPaidAmountInModel($request->modelName)) {
                 throw new \Exception(__('payment.failed_to_update_paid_amount'));
             }
 
@@ -500,17 +514,14 @@ class SaleReturnController extends Controller
                 'id' => $request->return_id,
 
             ]);
-
         } catch (\Exception $e) {
-                DB::rollback();
+            DB::rollback();
 
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
-
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
-
     }
 
 
@@ -518,12 +529,12 @@ class SaleReturnController extends Controller
     {
         $paymentCount = $request->row_count_payments;
 
-        for ($i=0; $i <= $paymentCount; $i++) {
+        for ($i = 0; $i <= $paymentCount; $i++) {
 
             /**
              * If array record not exist then continue forloop
              * */
-            if(!isset($request->payment_amount[$i])){
+            if (!isset($request->payment_amount[$i])) {
                 continue;
             }
 
@@ -532,12 +543,12 @@ class SaleReturnController extends Controller
              * */
             $amount           = $request->payment_amount[$i];
 
-            if($amount > 0){
-                if(!isset($request->payment_type_id[$i])){
-                        return [
-                            'status' => false,
-                            'message' => __('payment.missed_to_select_payment_type')."#".$i,
-                        ];
+            if ($amount > 0) {
+                if (!isset($request->payment_type_id[$i])) {
+                    return [
+                        'status' => false,
+                        'message' => __('payment.missed_to_select_payment_type') . "#" . $i,
+                    ];
                 }
 
                 $paymentsArray = [
@@ -548,12 +559,11 @@ class SaleReturnController extends Controller
                     'payment_from_unique_code'  => General::INVOICE->value,
                 ];
 
-                if(!$transaction = $this->paymentTransactionService->recordPayment($request->modelName, $paymentsArray)){
+                if (!$transaction = $this->paymentTransactionService->recordPayment($request->modelName, $paymentsArray)) {
                     throw new \Exception(__('payment.failed_to_record_payment_transactions'));
                 }
-
-            }//amount>0
-        }//for end
+            } //amount>0
+        } //for end
 
         return ['status' => true];
     }
@@ -561,11 +571,11 @@ class SaleReturnController extends Controller
     {
         $itemsCount = $request->row_count;
 
-        for ($i=0; $i < $itemsCount; $i++) {
+        for ($i = 0; $i < $itemsCount; $i++) {
             /**
              * If array record not exist then continue forloop
              * */
-            if(!isset($request->item_id[$i])){
+            if (!isset($request->item_id[$i])) {
                 continue;
             }
 
@@ -577,11 +587,11 @@ class SaleReturnController extends Controller
 
             //validate input Quantity
             $itemQuantity       = $request->quantity[$i];
-            if(empty($itemQuantity) || $itemQuantity === 0 || $itemQuantity < 0){
-                    return [
-                        'status' => false,
-                        'message' => ($itemQuantity<0) ? __('item.item_qty_negative', ['item_name' => $itemName]) : __('item.please_enter_item_quantity', ['item_name' => $itemName]),
-                    ];
+            if (empty($itemQuantity) || $itemQuantity === 0 || $itemQuantity < 0) {
+                return [
+                    'status' => false,
+                    'message' => ($itemQuantity < 0) ? __('item.item_qty_negative', ['item_name' => $itemName]) : __('item.please_enter_item_quantity', ['item_name' => $itemName]),
+                ];
             }
 
             /**
@@ -599,7 +609,7 @@ class SaleReturnController extends Controller
                 'quantity'                  => $itemQuantity,
                 'unit_id'                   => $request->unit_id[$i],
                 'unit_price'                => $request->sale_price[$i],
-                'mrp'                       => $request->mrp[$i]??0,
+                'mrp'                       => $request->mrp[$i] ?? 0,
 
                 'discount'                  => $request->discount[$i],
                 'discount_type'             => $request->discount_type[$i],
@@ -614,7 +624,7 @@ class SaleReturnController extends Controller
             ]);
 
             //return $transaction;
-            if(!$transaction){
+            if (!$transaction) {
                 throw new \Exception("Failed to record Item Transaction Entry!");
             }
 
@@ -624,9 +634,9 @@ class SaleReturnController extends Controller
              * batch
              * serial
              * */
-            if($itemDetails->tracking_type == 'serial'){
+            if ($itemDetails->tracking_type == 'serial') {
                 //Serial validate and insert records
-                if($itemQuantity > 0){
+                if ($itemQuantity > 0) {
                     $jsonSerials = $request->serial_numbers[$i];
                     $jsonSerialsDecode = json_decode($jsonSerials);
 
@@ -634,54 +644,49 @@ class SaleReturnController extends Controller
                      * Serial number count & Enter Quntity must be equal
                      * */
                     $countRecords = (!empty($jsonSerialsDecode)) ? count($jsonSerialsDecode) : 0;
-                    if($countRecords != $itemQuantity){
+                    if ($countRecords != $itemQuantity) {
                         throw new \Exception(__('item.opening_quantity_not_matched_with_serial_records'));
                     }
 
-                    foreach($jsonSerialsDecode as $serialNumber){
+                    foreach ($jsonSerialsDecode as $serialNumber) {
                         $serialArray = [
                             'serial_code'       =>  $serialNumber,
                         ];
 
                         $serialTransaction = $this->itemTransactionService->recordItemSerials($transaction->id, $serialArray, $request->item_id[$i], $request->warehouse_id[$i], ItemTransactionUniqueCode::SALE_RETURN->value);
 
-                        if(!$serialTransaction){
+                        if (!$serialTransaction) {
                             throw new \Exception(__('item.failed_to_save_serials'));
                         }
                     }
                 }
-            }
-            else if($itemDetails->tracking_type == 'batch'){
+            } else if ($itemDetails->tracking_type == 'batch') {
                 //Serial validate and insert records
-                if($itemQuantity > 0){
+                if ($itemQuantity > 0) {
                     /**
                      * Record Batch Entry for each batch
                      * */
                     $batchArray = [
-                            'batch_no'              =>  $request->batch_no[$i],
-                            'mfg_date'              =>  $request->mfg_date[$i]? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
-                            'exp_date'              =>  $request->exp_date[$i]? $this->toSystemDateFormat($request->exp_date[$i]) : null,
-                            'model_no'              =>  $request->model_no[$i],
-                            'mrp'                   =>  $request->mrp[$i]??0,
-                            'color'                 =>  $request->color[$i],
-                            'size'                  =>  $request->size[$i],
-                            'quantity'              =>  $itemQuantity,
-                        ];
+                        'batch_no'              =>  $request->batch_no[$i],
+                        'mfg_date'              =>  $request->mfg_date[$i] ? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
+                        'exp_date'              =>  $request->exp_date[$i] ? $this->toSystemDateFormat($request->exp_date[$i]) : null,
+                        'model_no'              =>  $request->model_no[$i],
+                        'mrp'                   =>  $request->mrp[$i] ?? 0,
+                        'color'                 =>  $request->color[$i],
+                        'size'                  =>  $request->size[$i],
+                        'quantity'              =>  $itemQuantity,
+                    ];
 
                     $batchTransaction = $this->itemTransactionService->recordItemBatches($transaction->id, $batchArray, $request->item_id[$i], $request->warehouse_id[$i], ItemTransactionUniqueCode::SALE_RETURN->value);
 
-                    if(!$batchTransaction){
+                    if (!$batchTransaction) {
                         throw new \Exception(__('item.failed_to_save_batch_records'));
                     }
-
                 }
-            }
-            else{
+            } else {
                 //Regular item transaction entry already done before if() condition
             }
-
-
-        }//for end
+        } //for end
 
         return ['status' => true];
     }
@@ -690,132 +695,134 @@ class SaleReturnController extends Controller
     /**
      * Datatabale
      * */
-    public function datatableList(Request $request){
+    public function datatableList(Request $request)
+    {
 
         $data = SaleReturn::with('user', 'party')
-                        ->when($request->party_id, function ($query) use ($request) {
-                            return $query->where('party_id', $request->party_id);
-                        })
-                        ->when($request->user_id, function ($query) use ($request) {
-                            return $query->where('created_by', $request->user_id);
-                        })
-                        ->when($request->from_date, function ($query) use ($request) {
-                            return $query->where('return_date', '>=', $this->toSystemDateFormat($request->from_date));
-                        })
-                        ->when($request->to_date, function ($query) use ($request) {
-                            return $query->where('return_date', '<=', $this->toSystemDateFormat($request->to_date));
-                        })
-                        ->when(!auth()->user()->can('sale.return.can.view.other.users.sale.returns'), function ($query) use ($request) {
-                            return $query->where('created_by', auth()->user()->id);
-                        });
+            ->when($request->party_id, function ($query) use ($request) {
+                return $query->where('party_id', $request->party_id);
+            })
+            ->when($request->user_id, function ($query) use ($request) {
+                return $query->where('created_by', $request->user_id);
+            })
+            ->when($request->from_date, function ($query) use ($request) {
+                return $query->where('return_date', '>=', $this->toSystemDateFormat($request->from_date));
+            })
+            ->when($request->to_date, function ($query) use ($request) {
+                return $query->where('return_date', '<=', $this->toSystemDateFormat($request->to_date));
+            })
+            ->when(!optional(auth()->user())->can('sale.return.can.view.other.users.sale.returns'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            });
 
         return DataTables::of($data)
-                    ->filter(function ($query) use ($request) {
-                        if ($request->has('search') && $request->search['value']) {
-                            $searchTerm = $request->search['value'];
-                            $query->where(function ($q) use ($searchTerm) {
-                                $q->where('return_code', 'like', "%{$searchTerm}%")
-                                  ->orWhere('grand_total', 'like', "%{$searchTerm}%")
-                                  ->orWhere('reference_no', 'like', "%{$searchTerm}%")
-                                  ->orWhereHas('party', function ($partyQuery) use ($searchTerm) {
-                                      $partyQuery->where('first_name', 'like', "%{$searchTerm}%")
-                                            ->orWhere('last_name', 'like', "%{$searchTerm}%");
-                                  })
-                                  ->orWhereHas('user', function ($userQuery) use ($searchTerm) {
-                                      $userQuery->where('username', 'like', "%{$searchTerm}%");
-                                  });
+            ->filter(function ($query) use ($request) {
+                if ($request->has('search') && $request->search['value']) {
+                    $searchTerm = $request->search['value'];
+                    $query->where(function ($q) use ($searchTerm) {
+                        $q->where('return_code', 'like', "%{$searchTerm}%")
+                            ->orWhere('grand_total', 'like', "%{$searchTerm}%")
+                            ->orWhere('reference_no', 'like', "%{$searchTerm}%")
+                            ->orWhereHas('party', function ($partyQuery) use ($searchTerm) {
+                                $partyQuery->where('first_name', 'like', "%{$searchTerm}%")
+                                    ->orWhere('last_name', 'like', "%{$searchTerm}%");
+                            })
+                            ->orWhereHas('user', function ($userQuery) use ($searchTerm) {
+                                $userQuery->where('username', 'like', "%{$searchTerm}%");
                             });
-                        }
-                    })
-                    ->addIndexColumn()
-                    ->addColumn('created_at', function ($row) {
-                        return $row->created_at->format(app('company')['date_format']);
-                    })
-                    ->addColumn('username', function ($row) {
-                        return $row->user->username??'';
-                    })
-                    ->addColumn('return_date', function ($row) {
-                        return $row->formatted_return_date;
-                    })
-                    ->addColumn('status', function ($row) {
-                        if ($row->sale) {
-                            return [
-                                'text' => "From Sale Invoice",
-                                'code' => $row->sale->sale_code,
-                                'url'  => route('sale.invoice.details', ['id' => $row->sale->id]),
-                            ];
-                        }
-                        return [
-                            'text' => "",
-                            'code' => "",
-                            'url'  => "",
-                        ];
-                    })
-                    ->addColumn('return_code', function ($row) {
-                        return $row->return_code;
-                    })
-                    ->addColumn('party_name', function ($row) {
-                        return $row->party->first_name." ".$row->party->last_name;
-                    })
-                    ->addColumn('grand_total', function ($row) {
-                        return $this->formatWithPrecision($row->grand_total);
-                    })
-                    ->addColumn('balance', function ($row) {
-                        return $this->formatWithPrecision($row->grand_total - $row->paid_amount);
-                    })
-                    ->addColumn('action', function($row){
-                            $id = $row->id;
+                    });
+                }
+            })
+            ->addIndexColumn()
+            ->addColumn('created_at', function ($row) {
+                return $row->created_at->format(app('company')['date_format']);
+            })
+            ->addColumn('username', function ($row) {
+                return $row->user->username ?? '';
+            })
+            ->addColumn('return_date', function ($row) {
+                return $row->formatted_return_date;
+            })
+            ->addColumn('status', function ($row) {
+                if ($row->sale) {
+                    return [
+                        'text' => "From Sale Invoice",
+                        'code' => $row->sale->sale_code,
+                        'url'  => route('sale.invoice.details', ['id' => $row->sale->id]),
+                    ];
+                }
+                return [
+                    'text' => "",
+                    'code' => "",
+                    'url'  => "",
+                ];
+            })
+            ->addColumn('return_code', function ($row) {
+                return $row->return_code;
+            })
+            ->addColumn('party_name', function ($row) {
+                return $row->party->first_name . " " . $row->party->last_name;
+            })
+            ->addColumn('grand_total', function ($row) {
+                return $this->formatWithPrecision($row->grand_total);
+            })
+            ->addColumn('balance', function ($row) {
+                return $this->formatWithPrecision($row->grand_total - $row->paid_amount);
+            })
+            ->addColumn('action', function ($row) {
+                $id = $row->id;
 
-                            $editUrl = route('sale.return.edit', ['id' => $id]);
-                            $deleteUrl = route('sale.return.delete', ['id' => $id]);
-                            $detailsUrl = route('sale.return.details', ['id' => $id]);
-                            $printUrl = route('sale.return.print', ['id' => $id]);
-                            $pdfUrl = route('sale.return.pdf', ['id' => $id]);
+                $editUrl = route('sale.return.edit', ['id' => $id]);
+                $deleteUrl = route('sale.return.delete', ['id' => $id]);
+                $detailsUrl = route('sale.return.details', ['id' => $id]);
+                $printUrl = route('sale.return.print', ['id' => $id]);
+                $pdfUrl = route('sale.return.pdf', ['id' => $id]);
 
-                            $actionBtn = '<div class="dropdown ms-auto">
+                $actionBtn = '<div class="dropdown ms-auto">
                             <a class="dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded font-22 text-option"></i>
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> '.__('app.edit').'</a>
+                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> ' . __('app.edit') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="' . $detailsUrl . '"></i><i class="bx bx-show-alt"></i> '.__('app.details').'</a>
+                                    <a class="dropdown-item" href="' . $detailsUrl . '"></i><i class="bx bx-show-alt"></i> ' . __('app.details') . '</a>
                                 </li>
                                 <li>
-                                    <a target="_blank" class="dropdown-item" href="' . $printUrl . '"></i><i class="bx bx-printer "></i> '.__('app.print').'</a>
+                                    <a target="_blank" class="dropdown-item" href="' . $printUrl . '"></i><i class="bx bx-printer "></i> ' . __('app.print') . '</a>
                                 </li>
                                 <li>
-                                    <a target="_blank" class="dropdown-item" href="' . $pdfUrl . '"></i><i class="bx bxs-file-pdf"></i> '.__('app.pdf').'</a>
+                                    <a target="_blank" class="dropdown-item" href="' . $pdfUrl . '"></i><i class="bx bxs-file-pdf"></i> ' . __('app.pdf') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item make-payment" data-invoice-id="' . $id . '" role="button"></i><i class="bx bx-money"></i> '.__('payment.make_payment').'</a>
+                                    <a class="dropdown-item make-payment" data-invoice-id="' . $id . '" role="button"></i><i class="bx bx-money"></i> ' . __('payment.make_payment') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item payment-history" data-invoice-id="' . $id . '" role="button"></i><i class="bx bx-table"></i> '.__('payment.history').'</a>
+                                    <a class="dropdown-item payment-history" data-invoice-id="' . $id . '" role="button"></i><i class="bx bx-table"></i> ' . __('payment.history') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item notify-through-email" data-model="sale/return" data-id="' . $id . '" role="button"></i><i class="bx bx-envelope"></i> '.__('app.send_email').'</a>
+                                    <a class="dropdown-item notify-through-email" data-model="sale/return" data-id="' . $id . '" role="button"></i><i class="bx bx-envelope"></i> ' . __('app.send_email') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item notify-through-sms" data-model="sale/return" data-id="' . $id . '" role="button"></i><i class="bx bx-envelope"></i> '.__('app.send_sms').'</a>
+                                    <a class="dropdown-item notify-through-sms" data-model="sale/return" data-id="' . $id . '" role="button"></i><i class="bx bx-envelope"></i> ' . __('app.send_sms') . '</a>
                                 </li>
                                 <li>
-                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id='.$id.'><i class="bx bx-trash"></i> '.__('app.delete').'</button>
+                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id=' . $id . '><i class="bx bx-trash"></i> ' . __('app.delete') . '</button>
                                 </li>
                             </ul>
                         </div>';
-                            return $actionBtn;
-                    })
-                    ->rawColumns(['action'])
-                    ->make(true);
+                return $actionBtn;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     /**
      * Delete Sale Records
      * @return JsonResponse
      * */
-    public function delete(Request $request) : JsonResponse{
+    public function delete(Request $request): JsonResponse
+    {
 
         DB::beginTransaction();
 
@@ -828,9 +835,8 @@ class SaleReturnController extends Controller
                 // Invalid record ID, handle the error (e.g., show a message, log, etc.)
                 return response()->json([
                     'status'    => false,
-                    'message' => __('app.invalid_record_id',['record_id' => $recordId]),
+                    'message' => __('app.invalid_record_id', ['record_id' => $recordId]),
                 ]);
-
             }
             // You can perform additional validation checks here if needed before deletion
         }
@@ -847,14 +853,14 @@ class SaleReturnController extends Controller
                 foreach ($sales as $sale) {
 
                     /**
-                    * Before deleting ItemTransaction data take the
-                    * old data of the item_serial_master_id
-                    * to update the item_serial_quantity
-                    * */
-                   $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($sale);
+                     * Before deleting ItemTransaction data take the
+                     * old data of the item_serial_master_id
+                     * to update the item_serial_quantity
+                     * */
+                    $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($sale);
 
                     //Sale Account Update
-                    foreach($sale->accountTransaction as $saleAccount){
+                    foreach ($sale->accountTransaction as $saleAccount) {
                         //get account if of model with tax accounts
                         $saleAccountId = $saleAccount->account_id;
 
@@ -863,7 +869,7 @@ class SaleReturnController extends Controller
 
                         //Update  account
                         $this->accountTransactionService->calculateAccounts($saleAccountId);
-                    }//sale account
+                    } //sale account
 
                     // Check if paymentTransactions exist
                     $paymentTransactions = $sale->paymentTransaction;
@@ -884,11 +890,11 @@ class SaleReturnController extends Controller
                             //delete Payment now
                             $paymentTransaction->delete();
                         }
-                    }//isNotEmpty
+                    } //isNotEmpty
 
                     $itemIdArray = [];
                     //sale Item delete and update the stock
-                    foreach($sale->itemTransaction as $itemTransaction){
+                    foreach ($sale->itemTransaction as $itemTransaction) {
                         //get item id
                         $itemId = $itemTransaction->item_id;
 
@@ -896,7 +902,7 @@ class SaleReturnController extends Controller
                         $itemTransaction->delete();
 
                         $itemIdArray[] = $itemId;
-                    }//sale account
+                    } //sale account
 
 
 
@@ -910,13 +916,12 @@ class SaleReturnController extends Controller
                     $sale->delete();
 
                     //Update stock update in master
-                    if(count($itemIdArray) > 0){
-                        foreach($itemIdArray as $itemId){
+                    if (count($itemIdArray) > 0) {
+                        foreach ($itemIdArray as $itemId) {
                             $this->itemService->updateItemStock($itemId);
                         }
                     }
-
-                }//sales
+                } //sales
             });
 
             //Delete Sale
@@ -933,7 +938,7 @@ class SaleReturnController extends Controller
             return response()->json([
                 'status'    => false,
                 'message' => __('app.cannot_delete_records'),
-            ],409);
+            ], 409);
         }
     }
 

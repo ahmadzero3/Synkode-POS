@@ -6,31 +6,20 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CompanyGeneralRequest extends FormRequest
 {
-    /**
-     * Indicates if the validator should stop on the first rule failure.
-     *
-     * @var bool
-     */
     protected $stopOnFirstFailure = true;
 
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'number_precision'              =>  ['required', 'numeric'],
-            'quantity_precision'            =>  ['required', 'numeric'],
+            'number_precision'       => ['required', 'numeric'],
+            'quantity_precision'     => ['required', 'numeric'],
+            'enable_minimum_stock_qty' => ['nullable'],
+            'minimum_stock_qty'        => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

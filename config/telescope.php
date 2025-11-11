@@ -17,6 +17,7 @@ return [
     */
 
     'domain' => env('TELESCOPE_DOMAIN'),
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -46,7 +47,7 @@ return [
 
     'storage' => [
         'database' => [
-            'connection' => env('DB_CONNECTION', 'mysql'),
+            'connection' => env('DB_CONNECTION', 'pgsql'),
             'chunk' => 1000,
         ],
     ],
@@ -62,7 +63,7 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', false),
+    'enabled' => env('TELESCOPE_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------

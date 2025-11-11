@@ -75,13 +75,13 @@ class EmailController extends Controller
             Storage::disk('public')->makeDirectory($directory);
         }
 
-        // Store the file in the 'items' directory with the specified filename
-        Storage::disk('public')->putFileAs($directory, $attachment, $filename);
+        // Store the file in the 'attachments' directory with the specified filename
+        Storage::disk('public')->put($directory . '/' . $filename, file_get_contents($attachment));
 
-        // Load the attachment
-        $attachmentPath = Storage::disk('public')->path($directory . '/' . $filename);
+        // Get the full path to the stored file
+        $attachmentPath = storage_path('app/public/' . $directory . '/' . $filename);
   
-        // Return both the original filename and the thumbnail data URI
+        // Return the attachment path
         return $attachmentPath;
     }
 }

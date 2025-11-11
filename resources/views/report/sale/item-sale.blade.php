@@ -41,7 +41,7 @@
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <x-label for="party_id" name="{{ __('customer.customer') }}" />
-                                            <select class="form-select party-ajax" data-party-type='Customer' data-placeholder="Select Customer" id="party_id" name="party_id"></select>
+                                            <select class="form-select party-ajax" data-party-type='customer' data-placeholder="Select Customer" id="party_id" name="party_id"></select>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <x-label for="item_id" name="{{ __('item.item_name') }}" />
@@ -91,7 +91,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="itemSaleReport">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('app.date') }}</th>
                                                         <th>{{ __('app.invoice_or_reference_no') }}</th>

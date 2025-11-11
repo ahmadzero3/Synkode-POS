@@ -48,6 +48,10 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function ($model) {
+            // Remove manual ID assignment to let database handle auto-increment
+            if (isset($model->id)) {
+                unset($model->id);
+            }
             $model->created_by = auth()->id();
             $model->updated_by = auth()->id();
         });

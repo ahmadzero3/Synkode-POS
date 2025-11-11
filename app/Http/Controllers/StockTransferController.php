@@ -44,10 +44,9 @@ class StockTransferController extends Controller
 
 
     public function __construct(
-                                ItemTransactionService $itemTransactionService,
-                                ItemService $itemService,
-                            )
-    {
+        ItemTransactionService $itemTransactionService,
+        ItemService $itemService,
+    ) {
         $this->companyId = App::APP_SETTINGS_RECORD_ID->value;
         $this->itemTransactionService = $itemTransactionService;
         $this->itemService = $itemService;
@@ -59,12 +58,13 @@ class StockTransferController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create(): View  {
+    public function create(): View
+    {
         $prefix = Prefix::findOrNew($this->companyId);
         $lastCountId = $this->getLastCountId();
         $data = [
             'prefix_code' => $prefix->stock_transfer,
-            'count_id' => ($lastCountId+1),
+            'count_id' => ($lastCountId + 1),
         ];
 
         return view('stock-transfer.create', compact('data'));
@@ -73,7 +73,8 @@ class StockTransferController extends Controller
     /**
      * Get last count ID
      * */
-    public function getLastCountId(){
+    public function getLastCountId()
+    {
         return StockTransfer::select('count_id')->orderBy('id', 'desc')->first()?->count_id ?? 0;
     }
 
@@ -82,27 +83,30 @@ class StockTransferController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function list() : View {
+    public function list(): View
+    {
         return view('stock-transfer.list');
     }
 
-     /**
+    /**
      * Edit a Sale Order.
      *
      * @param int $id The ID of the expense to edit.
      * @return \Illuminate\View\View
      */
-    public function edit($id) : View {
-        $transfer = StockTransfer::with(['itemTransaction' => function($query) {
-                        $query->where('unique_code', 'STOCK_TRANSFER')
-                              ->with([  'item',
-                                        'tax',
-                                        'batch.itemBatchMaster',
-                                        'itemSerialTransaction.itemSerialMaster',
-                                        'itemStockTransfer',
-                                        'item.itemGeneralQuantities',
-                                    ]);
-                    }])->findOrFail($id);
+    public function edit($id): View
+    {
+        $transfer = StockTransfer::with(['itemTransaction' => function ($query) {
+            $query->where('unique_code', 'STOCK_TRANSFER')
+                ->with([
+                    'item',
+                    'tax',
+                    'batch.itemBatchMaster',
+                    'itemSerialTransaction.itemSerialMaster',
+                    'itemStockTransfer',
+                    'item.itemGeneralQuantities',
+                ]);
+        }])->findOrFail($id);
 
         $transfer->operation = 'update';
 
@@ -120,7 +124,7 @@ class StockTransferController extends Controller
         // Prepare item transactions with associated units
         $allUnits = CacheService::get('unit');
 
-        $itemTransactions = $transfer->itemTransaction->map(function ($transaction) use ($allUnits ) {
+        $itemTransactions = $transfer->itemTransaction->map(function ($transaction) use ($allUnits) {
             $itemData = $transaction->toArray();
 
             // Use the getOnlySelectedUnits helper function
@@ -161,14 +165,17 @@ class StockTransferController extends Controller
      * @param int $id, the ID of the order
      * @return \Illuminate\View\View
      */
-    public function details($id) : View {
-        $transfer = StockTransfer::with(['itemTransaction' => function($query) {
-                        $query->where('unique_code', 'STOCK_TRANSFER')
-                              ->with([  'item',
-                                        'tax',
-                                        'batch.itemBatchMaster',
-                                        'itemSerialTransaction.itemSerialMaster']);
-                    }])->findOrFail($id);
+    public function details($id): View
+    {
+        $transfer = StockTransfer::with(['itemTransaction' => function ($query) {
+            $query->where('unique_code', 'STOCK_TRANSFER')
+                ->with([
+                    'item',
+                    'tax',
+                    'batch.itemBatchMaster',
+                    'itemSerialTransaction.itemSerialMaster'
+                ]);
+        }])->findOrFail($id);
 
         return view('stock-transfer.details', compact('transfer'));
     }
@@ -177,7 +184,8 @@ class StockTransferController extends Controller
     /**
      * Store Records
      * */
-    public function store(StockTransferRequest $request) : JsonResponse  {
+    public function store(StockTransferRequest $request): JsonResponse
+    {
         try {
 
             DB::beginTransaction();
@@ -185,13 +193,12 @@ class StockTransferController extends Controller
             $validatedData = $request->validated();
 
 
-            if($request->operation == 'save'){
+            if ($request->operation == 'save') {
                 // Create a new sale record using Eloquent and save it
                 $newTransfer = StockTransfer::create($validatedData);
 
                 $request->request->add(['transfer_id' => $newTransfer->id]);
-            }
-            else{
+            } else {
                 $fillableColumns = [
                     'transfer_date'         => $validatedData['transfer_date'],
                     'prefix_code'           => $validatedData['prefix_code'],
@@ -204,10 +211,10 @@ class StockTransferController extends Controller
                 $newTransfer->update($fillableColumns);
 
                 /**
-                * Before deleting ItemTransaction data take the
-                * old data of the item_serial_master_id
-                * to update the item_serial_quantity
-                * */
+                 * Before deleting ItemTransaction data take the
+                 * old data of the item_serial_master_id
+                 * to update the item_serial_quantity
+                 * */
                 $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($newTransfer);
                 $newTransfer->itemTransaction()->delete();
             }
@@ -218,7 +225,7 @@ class StockTransferController extends Controller
              * Save Table Items in Transfer Items Table
              * */
             $transferItemsArray = $this->saveTransferItems($request);
-            if(!$transferItemsArray['status']){
+            if (!$transferItemsArray['status']) {
                 throw new \Exception($transferItemsArray['message']);
             }
 
@@ -227,7 +234,7 @@ class StockTransferController extends Controller
              * Model: ItemStockTransfer
              * */
             $itemStockTransfer = $this->recordItemTransactionInItemStockTransfer($request->modelName);
-            if(!$itemStockTransfer){
+            if (!$itemStockTransfer) {
                 throw new \Exception($transferItemsArray['message']);
             }
 
@@ -245,17 +252,14 @@ class StockTransferController extends Controller
                 'id' => $request->transfer_id,
 
             ]);
-
         } catch (\Exception $e) {
-                DB::rollback();
+            DB::rollback();
 
-                return response()->json([
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                ], 409);
-
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 409);
         }
-
     }
 
     public function recordItemTransactionInItemStockTransfer($model)
@@ -266,8 +270,8 @@ class StockTransferController extends Controller
         $toItemTransactionId    = null;
         $fromWarehouseId    = null;
 
-        if($itemTransactions->count()>0){
-            foreach($itemTransactions as $transaction){
+        if ($itemTransactions->count() > 0) {
+            foreach ($itemTransactions as $transaction) {
                 /**
                  * STOCK_TRANSFER
                  * serial #1
@@ -275,12 +279,11 @@ class StockTransferController extends Controller
                  * STOCK_RECEIVE
                  * serial #2
                  * */
-                if($transaction->unique_code === ItemTransactionUniqueCode::STOCK_TRANSFER->value){
+                if ($transaction->unique_code === ItemTransactionUniqueCode::STOCK_TRANSFER->value) {
                     //STOCK_TRANSFER
                     $fromItemTransactionId = $transaction->id;
                     $fromWarehouseId = $transaction->warehouse_id;
-                }
-                else {
+                } else {
                     //STOCK_RECEIVE
                     $toItemTransactionId    = $transaction->id;
                     $toWarehouseId          = $transaction->warehouse_id;
@@ -293,15 +296,15 @@ class StockTransferController extends Controller
                         'to_warehouse_id'               =>  $toWarehouseId,
                         'item_id'                       =>  $transaction->item_id,
                     ]);
-                    if(!$insertInItemStockTransfer){
+                    if (!$insertInItemStockTransfer) {
                         throw new \Exception('Failed to insert records in ItemStockTransfer model!!');
                     }
 
 
-                    $fromItemTransactionId=null;
-                    $toItemTransactionId=null;
-                    $fromWarehouseId=null;
-                    $toWarehouseId=null;
+                    $fromItemTransactionId = null;
+                    $toItemTransactionId = null;
+                    $fromWarehouseId = null;
+                    $toWarehouseId = null;
                 }
             }
         }
@@ -316,12 +319,12 @@ class StockTransferController extends Controller
          * For One warehouse to another warehouse
          * */
 
-        for ($i=0; $i < $itemsCount; $i++) {
+        for ($i = 0; $i < $itemsCount; $i++) {
             //
             /**
              * If array record not exist then continue forloop
              * */
-            if(!isset($request->item_id[$i])){
+            if (!isset($request->item_id[$i])) {
                 continue;
             }
 
@@ -333,21 +336,21 @@ class StockTransferController extends Controller
 
             //validate input Quantity
             $itemQuantity       = $request->quantity[$i];
-            if(empty($itemQuantity) || $itemQuantity === 0 || $itemQuantity < 0){
-                    return [
-                        'status' => false,
-                        'message' => ($itemQuantity<0) ? __('item.item_qty_negative', ['item_name' => $itemName]) : __('item.please_enter_quantity_to_transfer', ['item_name' => $itemName]),
-                    ];
+            if (empty($itemQuantity) || $itemQuantity === 0 || $itemQuantity < 0) {
+                return [
+                    'status' => false,
+                    'message' => ($itemQuantity < 0) ? __('item.item_qty_negative', ['item_name' => $itemName]) : __('item.please_enter_quantity_to_transfer', ['item_name' => $itemName]),
+                ];
             }
 
-            for($j=1; $j<=2; $j++){
-                $uniqueCode = ($j==1) ? ItemTransactionUniqueCode::STOCK_TRANSFER->value : ItemTransactionUniqueCode::STOCK_RECEIVE->value;
+            for ($j = 1; $j <= 2; $j++) {
+                $uniqueCode = ($j == 1) ? ItemTransactionUniqueCode::STOCK_TRANSFER->value : ItemTransactionUniqueCode::STOCK_RECEIVE->value;
 
-                $warehouseId = ($j==1) ? $request->warehouse_id[$i] : $request->to_warehouse_id[$i];
+                $warehouseId = ($j == 1) ? $request->warehouse_id[$i] : $request->to_warehouse_id[$i];
 
                 $worthItemsDetails = $this->itemTransactionService->worthItemsDetails($request->warehouse_id[$i], [$request->item_id[$i]]);
 
-                $averageItemPurchasePrice = $worthItemsDetails['totalPurchaseCost']> 0 ? $worthItemsDetails['totalPurchaseCost']/$worthItemsDetails['totalAvailableQuantity'] : 0;
+                $averageItemPurchasePrice = $worthItemsDetails['totalPurchaseCost'] > 0 ? $worthItemsDetails['totalPurchaseCost'] / $worthItemsDetails['totalAvailableQuantity'] : 0;
                 /**
                  *
                  * Item Transaction Entry
@@ -368,7 +371,7 @@ class StockTransferController extends Controller
                 ]);
 
                 //return $transaction;
-                if(!$transaction){
+                if (!$transaction) {
                     throw new \Exception("Failed to record Item Transaction Entry!");
                 }
 
@@ -378,9 +381,9 @@ class StockTransferController extends Controller
                  * batch
                  * serial
                  * */
-                if($itemDetails->tracking_type == 'serial'){
+                if ($itemDetails->tracking_type == 'serial') {
                     //Serial validate and insert records
-                    if($itemQuantity > 0){
+                    if ($itemQuantity > 0) {
                         $jsonSerials = $request->serial_numbers[$i];
                         $jsonSerialsDecode = json_decode($jsonSerials);
 
@@ -388,56 +391,50 @@ class StockTransferController extends Controller
                          * Serial number count & Enter Quntity must be equal
                          * */
                         $countRecords = (!empty($jsonSerialsDecode)) ? count($jsonSerialsDecode) : 0;
-                        if($countRecords != $itemQuantity){
-                            throw new \Exception(__('item.opening_quantity_not_matched_with_serial_records').'<br>Item Name:'.$itemDetails->name);
+                        if ($countRecords != $itemQuantity) {
+                            throw new \Exception(__('item.opening_quantity_not_matched_with_serial_records') . '<br>Item Name:' . $itemDetails->name);
                         }
 
-                        foreach($jsonSerialsDecode as $serialNumber){
+                        foreach ($jsonSerialsDecode as $serialNumber) {
                             $serialArray = [
                                 'serial_code'       =>  $serialNumber,
                             ];
 
                             $serialTransaction = $this->itemTransactionService->recordItemSerials($transaction->id, $serialArray, $request->item_id[$i], $warehouseId, $uniqueCode);
 
-                            if(!$serialTransaction){
+                            if (!$serialTransaction) {
                                 throw new \Exception(__('item.failed_to_save_serials'));
                             }
                         }
                     }
-                }
-                else if($itemDetails->tracking_type == 'batch'){
+                } else if ($itemDetails->tracking_type == 'batch') {
                     //Serial validate and insert records
-                    if($itemQuantity > 0){
+                    if ($itemQuantity > 0) {
                         /**
                          * Record Batch Entry for each batch
                          * */
                         $batchArray = [
-                                'batch_no'              =>  $request->batch_no[$i],
-                                'mfg_date'              =>  $request->mfg_date[$i]? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
-                                'exp_date'              =>  $request->exp_date[$i]? $this->toSystemDateFormat($request->exp_date[$i]) : null,
-                                'model_no'              =>  $request->model_no[$i],
-                                'mrp'                   =>  $request->mrp[$i]??0,
-                                'color'                 =>  $request->color[$i],
-                                'size'                  =>  $request->size[$i],
-                                'quantity'              =>  $itemQuantity,
-                            ];
+                            'batch_no'              =>  $request->batch_no[$i],
+                            'mfg_date'              =>  $request->mfg_date[$i] ? $this->toSystemDateFormat($request->mfg_date[$i]) : null,
+                            'exp_date'              =>  $request->exp_date[$i] ? $this->toSystemDateFormat($request->exp_date[$i]) : null,
+                            'model_no'              =>  $request->model_no[$i],
+                            'mrp'                   =>  $request->mrp[$i] ?? 0,
+                            'color'                 =>  $request->color[$i],
+                            'size'                  =>  $request->size[$i],
+                            'quantity'              =>  $itemQuantity,
+                        ];
 
                         $batchTransaction = $this->itemTransactionService->recordItemBatches($transaction->id, $batchArray, $request->item_id[$i], $warehouseId, $uniqueCode);
 
-                        if(!$batchTransaction){
+                        if (!$batchTransaction) {
                             throw new \Exception(__('item.failed_to_save_batch_records'));
                         }
-
                     }
-                }
-                else{
+                } else {
                     //Regular item transaction entry already done before if() condition
                 }
             }
-
-
-
-        }//for end
+        } //for end
 
 
         return ['status' => true];
@@ -447,87 +444,89 @@ class StockTransferController extends Controller
     /**
      * Datatabale
      * */
-    public function datatableList(Request $request){
+    public function datatableList(Request $request)
+    {
 
         $data = StockTransfer::with('user')
-                        ->when($request->user_id, function ($query) use ($request) {
-                            return $query->where('created_by', $request->user_id);
-                        })
-                        ->when($request->from_date, function ($query) use ($request) {
-                            return $query->where('transfer_date', '>=', $this->toSystemDateFormat($request->from_date));
-                        })
-                        ->when($request->to_date, function ($query) use ($request) {
-                            return $query->where('transfer_date', '<=', $this->toSystemDateFormat($request->to_date));
-                        })
-                        ->when(!auth()->user()->can('stock_transfer.can.view.other.users.stock.transfers'), function ($query) use ($request) {
-                            return $query->where('created_by', auth()->user()->id);
-                        });
+            ->when($request->user_id, function ($query) use ($request) {
+                return $query->where('created_by', $request->user_id);
+            })
+            ->when($request->from_date, function ($query) use ($request) {
+                return $query->where('transfer_date', '>=', $this->toSystemDateFormat($request->from_date));
+            })
+            ->when($request->to_date, function ($query) use ($request) {
+                return $query->where('transfer_date', '<=', $this->toSystemDateFormat($request->to_date));
+            })
+            ->when(!optional(auth()->user())->can('stock_transfer.can.view.other.users.stock.transfers'), function ($query) use ($request) {
+                return $query->where('created_by', auth()->user()->id);
+            });
 
         return DataTables::of($data)
-                    ->filter(function ($query) use ($request) {
-                        if ($request->has('search') && $request->search['value']) {
-                            $searchTerm = $request->search['value'];
-                            $query->where(function ($q) use ($searchTerm) {
-                                $q->WhereHas('user', function ($userQuery) use ($searchTerm) {
-                                      $userQuery->where('username', 'like', "%{$searchTerm}%")
-                                                ->orWhere('transfer_date', 'like', "%{$searchTerm}%")
-                                                ->orWhere('transfer_code', 'like', "%{$searchTerm}%")
-                                                ;
-                                  });
-                            });
-                        }
-                    })
-                    ->addIndexColumn()
-                    ->addColumn('created_at', function ($row) {
-                        return $row->created_at->format(app('company')['date_format']);
-                    })
-                    ->addColumn('username', function ($row) {
-                        return $row->user->username??'';
-                    })
-                    ->addColumn('transfer_date', function ($row) {
-                        return $row->formatted_transfer_date;
-                    })
-                    ->addColumn('action', function($row){
-                            $id = $row->id;
+            ->filter(function ($query) use ($request) {
+                if ($request->has('search') && $request->search['value']) {
+                    $searchTerm = $request->search['value'];
+                    $query->where(function ($q) use ($searchTerm) {
+                        $q->WhereHas('user', function ($userQuery) use ($searchTerm) {
+                            $userQuery->where('username', 'like', "%{$searchTerm}%")
+                                ->orWhere('transfer_date', 'like', "%{$searchTerm}%")
+                                ->orWhere('transfer_code', 'like', "%{$searchTerm}%")
+                            ;
+                        });
+                    });
+                }
+            })
+            ->addIndexColumn()
+            ->addColumn('created_at', function ($row) {
+                return $row->created_at->format(app('company')['date_format']);
+            })
+            ->addColumn('username', function ($row) {
+                return $row->user->username ?? '';
+            })
+            ->addColumn('transfer_date', function ($row) {
+                return $row->formatted_transfer_date;
+            })
+            ->addColumn('action', function ($row) {
+                $id = $row->id;
 
-                            $editUrl = route('stock_transfer.edit', ['id' => $id]);
-                            $deleteUrl = route('stock_transfer.delete', ['id' => $id]);
-                            $detailsUrl = route('stock_transfer.details', ['id' => $id]);
-                            $printUrl = route('stock_transfer.print', ['id' => $id]);
-                            $pdfUrl = route('stock_transfer.pdf', ['id' => $id]);
+                $editUrl = route('stock_transfer.edit', ['id' => $id]);
+                $deleteUrl = route('stock_transfer.delete', ['id' => $id]);
+                $detailsUrl = route('stock_transfer.details', ['id' => $id]);
+                $printUrl = route('stock_transfer.print', ['id' => $id]);
+                $pdfUrl = route('stock_transfer.pdf', ['id' => $id]);
 
-                            $actionBtn = '<div class="dropdown ms-auto">
+                $actionBtn = '<div class="dropdown ms-auto">
                             <a class="dropdown-toggle dropdown-toggle-nocaret" href="#" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded font-22 text-option"></i>
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> '.__('app.edit').'</a>
+                                    <a class="dropdown-item" href="' . $editUrl . '"><i class="bi bi-trash"></i><i class="bx bx-edit"></i> ' . __('app.edit') . '</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="' . $detailsUrl . '"></i><i class="bx bx-show-alt"></i> '.__('app.details').'</a>
+                                    <a class="dropdown-item" href="' . $detailsUrl . '"></i><i class="bx bx-show-alt"></i> ' . __('app.details') . '</a>
                                 </li>
                                 <li>
-                                    <a target="_blank" class="dropdown-item" href="' . $printUrl . '"></i><i class="bx bx-printer "></i> '.__('app.print').'</a>
+                                    <a target="_blank" class="dropdown-item" href="' . $printUrl . '"></i><i class="bx bx-printer "></i> ' . __('app.print') . '</a>
                                 </li>
                                 <li>
-                                    <a target="_blank" class="dropdown-item" href="' . $pdfUrl . '"></i><i class="bx bxs-file-pdf"></i> '.__('app.pdf').'</a>
+                                    <a target="_blank" class="dropdown-item" href="' . $pdfUrl . '"></i><i class="bx bxs-file-pdf"></i> ' . __('app.pdf') . '</a>
                                 </li>
                                 <li>
-                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id='.$id.'><i class="bx bx-trash"></i> '.__('app.delete').'</button>
+                                    <button type="button" class="dropdown-item text-danger deleteRequest" data-delete-id=' . $id . '><i class="bx bx-trash"></i> ' . __('app.delete') . '</button>
                                 </li>
                             </ul>
                         </div>';
-                            return $actionBtn;
-                    })
-                    ->rawColumns(['action'])
-                    ->make(true);
+                return $actionBtn;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     /**
      * Delete Sale Records
      * @return JsonResponse
      * */
-    public function delete(Request $request) : JsonResponse{
+    public function delete(Request $request): JsonResponse
+    {
 
         DB::beginTransaction();
 
@@ -540,9 +539,8 @@ class StockTransferController extends Controller
                 // Invalid record ID, handle the error (e.g., show a message, log, etc.)
                 return response()->json([
                     'status'    => false,
-                    'message' => __('app.invalid_record_id',['record_id' => $recordId]),
+                    'message' => __('app.invalid_record_id', ['record_id' => $recordId]),
                 ]);
-
             }
             // You can perform additional validation checks here if needed before deletion
         }
@@ -558,16 +556,16 @@ class StockTransferController extends Controller
             StockTransfer::whereIn('id', $selectedRecordIds)->chunk(100, function ($transfers) {
                 foreach ($transfers as $transfer) {
                     /**
-                    * Before deleting ItemTransaction data take the
-                    * old data of the item_serial_master_id
-                    * to update the item_serial_quantity
-                    * */
-                   $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($transfer);
+                     * Before deleting ItemTransaction data take the
+                     * old data of the item_serial_master_id
+                     * to update the item_serial_quantity
+                     * */
+                    $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($transfer);
 
-                   $itemIdArray = [];
+                    $itemIdArray = [];
 
                     //Purchasr Item delete and update the stock
-                    foreach($transfer->itemTransaction as $itemTransaction){
+                    foreach ($transfer->itemTransaction as $itemTransaction) {
                         //get item id
                         $itemId = $itemTransaction->item_id;
 
@@ -575,7 +573,7 @@ class StockTransferController extends Controller
                         $itemTransaction->delete();
 
                         $itemIdArray[] = $itemId;
-                    }//transfer account
+                    } //transfer account
 
                     /**
                      * UPDATE HISTORY DATA
@@ -587,17 +585,14 @@ class StockTransferController extends Controller
                     $transfer->delete();
 
                     //Update stock update in master
-                    if(count($itemIdArray) > 0){
-                        foreach($itemIdArray as $id){
+                    if (count($itemIdArray) > 0) {
+                        foreach ($itemIdArray as $id) {
                             $this->itemService->updateItemStock($itemId);
                         }
                     }
+                } //transfers
 
-
-
-                }//transfers
-
-            });//chunk
+            }); //chunk
 
             //Delete Sale
             $deletedCount = StockTransfer::whereIn('id', $selectedRecordIds)->delete();
@@ -613,7 +608,7 @@ class StockTransferController extends Controller
             return response()->json([
                 'status'    => false,
                 'message' => __('app.cannot_delete_records'),
-            ],409);
+            ], 409);
         }
     }
 
@@ -623,14 +618,17 @@ class StockTransferController extends Controller
      * @param int $id, the ID of the sale
      * @return \Illuminate\View\View
      */
-    public function print($id, $isPdf = false) : View {
+    public function print($id, $isPdf = false): View
+    {
 
-        $transfer = StockTransfer::with(['itemTransaction' => function($query) {
+        $transfer = StockTransfer::with(['itemTransaction' => function ($query) {
             $query->where('unique_code', 'STOCK_TRANSFER')
-                  ->with([  'item',
-                            'tax',
-                            'batch.itemBatchMaster',
-                            'itemSerialTransaction.itemSerialMaster']);
+                ->with([
+                    'item',
+                    'tax',
+                    'batch.itemBatchMaster',
+                    'itemSerialTransaction.itemSerialMaster'
+                ]);
         }])->findOrFail($id);
 
         //Batch Tracking Row count for invoice columns setting
@@ -641,28 +639,28 @@ class StockTransferController extends Controller
         ];
 
         return view('print.stock-transfer.print', compact('isPdf', 'printData', 'transfer', 'batchTrackingRowCount'));
-
     }
 
 
     /**
      * Generate PDF using View: print() method
      * */
-    public function generatePdf($id, $destination= 'D'){
+    public function generatePdf($id, $destination = 'D')
+    {
         $random = uniqid();
 
-        $html = $this->print($id, isPdf:true);
+        $html = $this->print($id, isPdf: true);
 
         $mpdf = new Mpdf([
-                'mode' => 'utf-8',
-                'format' => 'A4',
-                'margin_left' => 2,
-                'margin_right' => 2,
-                'margin_top' => 2,
-                'margin_bottom' => 2,
-                'default_font' => 'dejavusans',
-                //'direction' => 'rtl',
-            ]);
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 2,
+            'margin_right' => 2,
+            'margin_top' => 2,
+            'margin_bottom' => 2,
+            'default_font' => 'dejavusans',
+            //'direction' => 'rtl',
+        ]);
 
         $mpdf->showImageErrors = true;
         $mpdf->WriteHTML($html);
@@ -676,10 +674,8 @@ class StockTransferController extends Controller
          * File Save
          * 'F'
          * */
-        $fileName = 'Stock-Transfer-'.$id.'-'.$random.'.pdf';
+        $fileName = 'Stock-Transfer-' . $id . '-' . $random . '.pdf';
 
         $mpdf->Output($fileName, $destination);
-
     }
-
 }

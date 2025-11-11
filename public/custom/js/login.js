@@ -1,16 +1,16 @@
-$(function() {
-	"use strict";
+$(function () {
+    "use strict";
 
     let originalButtonText;
 
-    $("#loginForm").on("submit", function(e) {
+    $("#loginForm").on("submit", function (e) {
         e.preventDefault();
         const form = $(this);
         const formArray = {
             formId: form.attr("id"),
             csrf: form.find('input[name="_token"]').val(),
             url: form.closest('form').attr('action'),
-            formObject : form,
+            formObject: form,
         };
         ajaxRequest(formArray);
     });
@@ -33,19 +33,19 @@ $(function() {
             .html(originalButtonText);
     }
 
-    function beforeCallAjaxRequest(formObject){
+    function beforeCallAjaxRequest(formObject) {
         disableSubmitButton(formObject);
     }
 
-    function afterSeccessOfAjaxRequest(formObject){
-        redirectToDashboard(formObject);
+    function afterSeccessOfAjaxRequest(formObject, redirectUrl) {
+        redirectToDashboard(formObject, redirectUrl);
     }
 
-    function afterFailOfAjaxRequest(formObject){
-    	enableSubmitButton(formObject);
+    function afterFailOfAjaxRequest(formObject) {
+        enableSubmitButton(formObject);
     }
 
-    function ajaxRequest(formArray){
+    function ajaxRequest(formArray) {
         var formData = new FormData(document.getElementById(formArray.formId));
         var jqxhr = $.ajax({
             type: 'POST',
@@ -57,66 +57,68 @@ $(function() {
             headers: {
                 'X-CSRF-TOKEN': formArray.csrf
             },
-            beforeSend: function() {
+            beforeSend: function () {
                 // Actions to be performed before sending the AJAX request
                 if (typeof beforeCallAjaxRequest === 'function') {
                     beforeCallAjaxRequest(formArray.formObject);
                 }
             },
         });
-        jqxhr.done(function(data) {
-            iziToast.success({title: 'Success', layout: 2, message: data.message});
+        jqxhr.done(function (data) {
+            iziToast.success({ title: 'Success', layout: 2, message: data.message });
             // Actions to be performed after response from the AJAX request
             if (typeof afterSeccessOfAjaxRequest === 'function') {
-                afterSeccessOfAjaxRequest(formArray.formObject);
+                // Use the redirect URL from server response or default to 'dashboard'
+                var redirectUrl = data.redirect_url || 'dashboard';
+                afterSeccessOfAjaxRequest(formArray.formObject, redirectUrl);
             }
         });
-        jqxhr.fail(function(response) {
-                var message = response.responseJSON.message;
-                iziToast.error({title: 'Error', layout: 2, message: message});
-                if (typeof afterFailOfAjaxRequest === 'function') {
-		            afterFailOfAjaxRequest(formArray.formObject);
-		        }
+        jqxhr.fail(function (response) {
+            var message = response.responseJSON.message;
+            iziToast.error({ title: 'Error', layout: 2, message: message });
+            if (typeof afterFailOfAjaxRequest === 'function') {
+                afterFailOfAjaxRequest(formArray.formObject);
+            }
         });
-        jqxhr.always(function() {
+        jqxhr.always(function () {
             //
         });
     }
 
-    function formAdjustIfSaveOperation(formObject){
+    function formAdjustIfSaveOperation(formObject) {
         const _method = formObject.find('input[name="_method"]').val();
         /* Only if Save Operation called*/
-        if(_method.toUpperCase() == 'POST' ){
+        if (_method.toUpperCase() == 'POST') {
             var formId = formObject.attr("id");
-            $("#"+formId)[0].reset();
+            $("#" + formId)[0].reset();
         }
     }
 
-    function redirectToDashboard(formObject){
-    	showRedirectMessageOnButton(formObject);
-    	setTimeout(function() { 
-	       location.href = 'dashboard';
-	    }, 1000);
+    function redirectToDashboard(formObject, redirectUrl) {
+        showRedirectMessageOnButton(formObject);
+        setTimeout(function () {
+            location.href = redirectUrl;
+        }, 1000);
     }
 
     /**
      * Hide and Show Password
      * */
-    $("#show_hide_password a").on('click', function(event) {
-  		show_hide_password('show_hide_password');
-  	});
+    $("#show_hide_password a").on('click', function (event) {
+        show_hide_password('show_hide_password');
+    });
     /**
      * Hide and show dynamic function execution
     */
     function show_hide_password(id) {
-	  	var input = $('#' + id + ' input');
-		var icon = $('#' + id + ' i');
-		if (input.attr("type") === "text") {
-			input.attr('type', 'password');
-		    icon.removeClass("bx-hide").addClass("bx-show");
-		} else if (input.attr("type") === "password") {
-		    input.attr('type', 'text');
-		    icon.removeClass("bx-show").addClass("bx-hide");
-		}
-	}
+        var input = $('#' + id + ' input');
+        var icon = $('#' + id + ' i');
+        if (input.attr("type") === "text") {
+            input.attr('type', 'password');
+            icon.removeClass("bx-hide").addClass("bx-show");
+        } else if (input.attr("type") === "password") {
+            input.attr('type', 'text');
+            icon.removeClass("bx-show").addClass("bx-hide");
+        }
+    }
 });//main function

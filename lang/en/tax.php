@@ -26,4 +26,5 @@ return [
     'igst'                      => 'IGST',
     'gst'                       => 'GST',
     'taxable_value'             => 'Taxable Value',
+    'no_tax'                    => 'No Tax',
 ];

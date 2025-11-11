@@ -8,6 +8,7 @@ use App\Http\Requests\EmailTemplateRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use App\Models\EmailTemplate;
+use Illuminate\Database\QueryException;
 
 class EmailTemplateController extends Controller
 {

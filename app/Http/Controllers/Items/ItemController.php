@@ -104,7 +104,7 @@ class ItemController extends Controller
     {
 
         $item = Item::find($id);
-        $transaction = $item->itemTransaction()->get()->first(); //Used Morph
+        $transaction = $item->itemTransaction()->first(); // no need ->get()->first()
         $transactionId = ($transaction) ? $transaction->id : null;
 
         /**
@@ -127,9 +127,6 @@ class ItemController extends Controller
         return view('items.item.edit', compact('item', 'transaction', 'batchJson', 'serviceJson', 'todaysDate'));
     }
 
-    /**
-     * Return JsonResponse
-     * */
     public function store(ItemRequest $request)
     {
         try {
@@ -138,27 +135,15 @@ class ItemController extends Controller
             $filename = null;
             $jsonSerialsDecode = [];
 
-            /**
-             * Get the validated data from the ItemRequest
-             * */
             $validatedData = $request->validated();
-
-            /**
-             * Know which operation want
-             * `save` or `update`
-             * */
             $operation = $request->operation;
 
-            /**
-             * Image Upload
-             * */
+            // 1. Handle image upload
             if ($request->hasFile('image') && $request->file('image')->isValid()) {
                 $filename = $this->uploadImage($request->file('image'));
             }
 
-            /**
-             * Save or Update the Items Model
-             * */
+            // 2. Prepare fields to save
             $recordsToSave = [
                 'is_service'        =>  $request->is_service,
                 'item_code'         =>  $request->item_code,
@@ -167,9 +152,7 @@ class ItemController extends Controller
                 'hsn'               =>  $request->hsn,
                 'sku'               =>  $request->sku,
                 'item_category_id'  =>  $request->item_category_id,
-
                 'brand_id'          =>  $request->brand_id,
-
                 'base_unit_id'      =>  $request->base_unit_id,
                 'secondary_unit_id' =>  $request->secondary_unit_id,
                 'conversion_rate'   => ($request->base_unit_id == $request->secondary_unit_id) ? 1 : $request->conversion_rate,
@@ -181,206 +164,221 @@ class ItemController extends Controller
                 'purchase_price'            =>  $request->purchase_price,
                 'is_purchase_price_with_tax' =>  $request->is_purchase_price_with_tax,
                 'tax_id'                    =>  $request->tax_id,
-                'wholesale_price'            =>  $request->wholesale_price,
-                'is_wholesale_price_with_tax' =>  $request->is_wholesale_price_with_tax,
+                'wholesale_price'           =>  $request->wholesale_price,
+                'is_wholesale_price_with_tax' => $request->is_wholesale_price_with_tax,
 
-                'profit_margin'             =>  $request->profit_margin, //In Percentage %
-
+                'profit_margin'             =>  $request->profit_margin,
                 'mrp'                       =>  $request->mrp,
                 'msp'                       =>  $request->msp,
 
                 'tracking_type'             =>  $request->tracking_type,
                 'min_stock'                 =>  $request->min_stock,
                 'item_location'             =>  $request->item_location,
-
                 'status'                    =>  $request->status,
-
             ];
 
+            // 3. CREATE vs UPDATE
             if ($request->operation == 'save') {
-                // Create a new expense record using Eloquent and save it
-                $recordsToSave['count_id']      = $this->getLastCountId() + 1;
-                $recordsToSave['image_path']    = $filename;
-
+                // 👉 First time create
+                $recordsToSave['count_id']   = $this->getLastCountId() + 1;
+                $recordsToSave['image_path'] = $filename;
                 $itemModel = Item::create($recordsToSave);
+
+                // ✅ Attach immediately
+                $request->attributes->set('itemModel', $itemModel);
             } else {
+                // 👉 Update existing item
                 $itemModel = Item::find($request->item_id);
-                if (!empty($filename)) {
-                    $recordsToSave['image_path']    = $filename;
+                if (!$itemModel) {
+                    throw new \Exception('Item not found for update.');
                 }
 
-                /**
-                 * Before deleting ItemTransaction data take the
-                 * old data of the item_serial_master_id
-                 * to update the item_serial_quantity
-                 * */
+                if (!empty($filename)) {
+                    $recordsToSave['image_path'] = $filename;
+                }
+
                 $this->previousHistoryOfItems = $this->itemTransactionService->getHistoryOfItems($itemModel);
 
-                //Load Item Transactions like a opening stock
-                $itemTransactions = $itemModel->itemTransaction;
-                foreach ($itemTransactions as $itemTransaction) {
-                    //Delete Account Transaction
-                    //$itemTransaction->accountTransaction()->delete();
-
-                    //Delete Item Transaction
-                    $itemTransaction->delete();
-                }
-
-                //Update the records
                 $itemModel->update($recordsToSave);
+
+                // ✅ Attach immediately
+                $request->attributes->set('itemModel', $itemModel);
+
+                // ✅ Adjust opening quantity if changed
+                if ($request->has('opening_quantity')) {
+                    $newQty = (float) $request->opening_quantity;
+
+                    $oldTransaction = $itemModel->itemTransaction()
+                        ->where('transaction_type', ItemTransactionUniqueCode::ITEM_OPENING->value)
+                        ->first();
+
+                    if ($oldTransaction) {
+                        $oldQty = (float) $oldTransaction->quantity;
+                        if ($newQty != $oldQty) {
+                            $oldTransaction->quantity = $newQty;
+                            $oldTransaction->unit_price = $request->at_price;
+                            $oldTransaction->warehouse_id = $request->warehouse_id;
+                            $oldTransaction->save();
+
+                            $this->itemTransactionService->updateItemGeneralQuantityWarehouseWise($itemModel->id);
+                        }
+                    } else {
+                        if ($newQty > 0) {
+                            $transaction = $this->recordInItemTransactionEntry($request);
+                            if (!$transaction) {
+                                throw new \Exception('Failed to record opening transaction.');
+                            }
+                        }
+                    }
+                }
             }
 
-            $request->request->add(['itemModel' => $itemModel]);
-
-            /**
-             * Tracking Type:
-             * regular
-             * batch
-             * serial
-             * */
-
+            // 4. Handle tracking types (serial / batch / regular)
             if ($request->tracking_type == 'serial') {
-                //Serial validate and insert records
                 if ($request->opening_quantity > 0) {
                     $jsonSerials = $request->serial_number_json;
                     $jsonSerialsDecode = json_decode($jsonSerials);
-
-                    /**
-                     * Serial number count & Enter Quntity must be equal
-                     * */
                     $countRecords = (!empty($jsonSerialsDecode)) ? count($jsonSerialsDecode) : 0;
                     if ($countRecords != $request->opening_quantity) {
                         throw new \Exception(__('item.opening_quantity_not_matched_with_serial_records'));
                     }
-
-                    /**
-                     * Record ItemTransactions
-                     * */
-                    if (!$transaction = $this->recordInItemTransactionEntry($request)) {
+                    $transaction = $this->recordInItemTransactionEntry($request);
+                    if (!$transaction) {
                         throw new \Exception(__('item.failed_to_record_item_transactions'));
                     }
-
                     foreach ($jsonSerialsDecode as $serialNumber) {
-
-                        $serialArray = [
-                            'serial_code'       =>  $serialNumber,
-                        ];
-
-                        $serialTransaction = $this->itemTransactionService->recordItemSerials($transaction->id, $serialArray, $request->itemModel->id, $request->warehouse_id, ItemTransactionUniqueCode::ITEM_OPENING->value);
-
+                        $serialArray = ['serial_code' =>  $serialNumber];
+                        $serialTransaction = $this->itemTransactionService->recordItemSerials(
+                            $transaction->id,
+                            $serialArray,
+                            $request->attributes->get('itemModel')->id,
+                            $request->warehouse_id,
+                            ItemTransactionUniqueCode::ITEM_OPENING->value
+                        );
                         if (!$serialTransaction) {
                             throw new \Exception(__('item.failed_to_save_serials'));
                         }
                     }
                 }
             } else if ($request->tracking_type == 'batch') {
-                //Serial validate and insert records
                 if ($request->opening_quantity > 0) {
                     $jsonBatches = $request->batch_details_json;
                     $jsonBatchDecode = json_decode($jsonBatches);
-
-                    /**
-                     * Sum the opening quantity
-                     * */
                     $totalOpeningQuantity = (!empty($jsonBatchDecode)) ? array_sum(array_column($jsonBatchDecode, 'openingQuantity')) : 0;
-
-                    /**
-                     * batch number count & Enter Quntity must be equal
-                     * */
                     if ($totalOpeningQuantity != $request->opening_quantity) {
                         throw new \Exception(__('item.opening_quantity_not_matched_with_batch_records'));
                     }
-
-                    /**
-                     * Record ItemTransactions
-                     * */
-                    if (!$transaction = $this->recordInItemTransactionEntry($request)) {
+                    $transaction = $this->recordInItemTransactionEntry($request);
+                    if (!$transaction) {
                         throw new \Exception(__('item.failed_to_record_item_transactions'));
                     }
-
-                    /**
-                     * Record Batch Entry for each batch
-                     * */
                     foreach ($jsonBatchDecode as $batchRecord) {
                         $batchArray = [
-                            'batch_no'              =>  $batchRecord->batchNo,
-                            'mfg_date'              =>  $batchRecord->mfgDate ? $this->toSystemDateFormat($batchRecord->mfgDate) : null,
-                            'exp_date'              =>  $batchRecord->expDate ? $this->toSystemDateFormat($batchRecord->expDate) : null,
-                            'model_no'              =>  $batchRecord->modelNo,
-                            'mrp'                   =>  $batchRecord->mrp ?? 0,
-                            'color'                 =>  $batchRecord->color,
-                            'size'                  =>  $batchRecord->size,
-                            'quantity'              =>  $batchRecord->openingQuantity,
+                            'batch_no'  => $batchRecord->batchNo,
+                            'mfg_date'  => $batchRecord->mfgDate ? $this->toSystemDateFormat($batchRecord->mfgDate) : null,
+                            'exp_date'  => $batchRecord->expDate ? $this->toSystemDateFormat($batchRecord->expDate) : null,
+                            'model_no'  => $batchRecord->modelNo,
+                            'mrp'       => $batchRecord->mrp ?? 0,
+                            'color'     => $batchRecord->color,
+                            'size'      => $batchRecord->size,
+                            'quantity'  => $batchRecord->openingQuantity,
                         ];
-
-                        $batchTransaction = $this->itemTransactionService->recordItemBatches($transaction->id, $batchArray, $request->itemModel->id, $request->warehouse_id, ItemTransactionUniqueCode::ITEM_OPENING->value);
-
+                        $batchTransaction = $this->itemTransactionService->recordItemBatches(
+                            $transaction->id,
+                            $batchArray,
+                            $request->attributes->get('itemModel')->id,
+                            $request->warehouse_id,
+                            ItemTransactionUniqueCode::ITEM_OPENING->value
+                        );
                         if (!$batchTransaction) {
                             throw new \Exception(__('item.failed_to_save_batch_records'));
                         }
                     }
                 }
             } else {
-                //Regular item transaction entry
-                if ($request->opening_quantity > 0) {
-                    if (!$transaction = $this->recordInItemTransactionEntry($request)) {
+                if ($request->opening_quantity > 0 && $request->operation == 'save') {
+                    $transaction = $this->recordInItemTransactionEntry($request);
+                    if (!$transaction) {
                         throw new \Exception(__('item.failed_to_record_item_transactions'));
                     }
                 }
             }
 
-            /**
-             * UPDATE HISTORY DATA
-             * LIKE: ITEM SERIAL NUMBER QUNATITY, BATCH NUMBER QUANTITY, GENERAL DATA QUANTITY
-             * */
-            $this->itemTransactionService->updatePreviousHistoryOfItems($request->itemModel, $this->previousHistoryOfItems);
+            // 5. Handle Offer Items (Combos)
+            $offerItemsJson = $request->input('offer_items_json');
+            if (!empty($offerItemsJson)) {
+                $components = json_decode($offerItemsJson, true) ?: [];
+                $components = array_values(array_filter($components, function ($r) {
+                    return isset($r['item_id']) && (float)($r['quantity'] ?? 0) >= 1;
+                }));
+                if (count($components) < 2) {
+                    throw new \Exception('Offer/Combo must contain at least 2 items.');
+                }
+                \App\Models\Items\ItemOfferComponent::where('offer_item_id', $itemModel->id)->delete();
+                $rows = [];
+                foreach ($components as $c) {
+                    $rows[] = [
+                        'offer_item_id'     => $itemModel->id,
+                        'component_item_id' => $c['item_id'],
+                        'quantity'          => $c['quantity'],
+                        'created_at'        => now(),
+                        'updated_at'        => now(),
+                    ];
+                }
+                if (!empty($rows)) {
+                    \DB::table('item_offer_components')->insert($rows);
+                }
+            }
 
-            //Update Item Master Average Purchase Price
-            $this->itemTransactionService->updateItemMasterAveragePurchasePrice([$request->itemModel->id]);
+            // 6. Update history + average purchase price
+            $this->itemTransactionService->updatePreviousHistoryOfItems($request->attributes->get('itemModel'), $this->previousHistoryOfItems);
+            $this->itemTransactionService->updateItemMasterAveragePurchasePrice([$request->attributes->get('itemModel')->id]);
 
             DB::commit();
 
             return response()->json([
                 'status'    => true,
-                'message' => __('app.record_saved_successfully'),
-                'id' => $request->itemModel->id,
-                'name' => $request->itemModel->name,
+                'message'   => __('app.record_saved_successfully'),
+                'id'        => $request->attributes->get('itemModel')->id,
+                'name'      => $request->attributes->get('itemModel')->name,
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-
+            DB::rollBack();
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => $e->getMessage(),
-            ], 409);
+            ], 500);
         }
     }
 
+
+
     public function recordInItemTransactionEntry($request)
     {
-        /**
-         * Item Model has method transaction method
-         * */
-        $itemModel = $request->itemModel;
+        $itemModel = $request->attributes->get('itemModel');
+        if (!$itemModel) {
+            throw new \Exception('Item model not found in request.');
+        }
 
         $transaction = $this->itemTransactionService->recordItemTransactionEntry($itemModel, [
-            'item_id'                   => $itemModel->id,
-            'transaction_date'          => $request->transaction_date,
-            'warehouse_id'              => $request->warehouse_id,
-            'tracking_type'             => $request->tracking_type,
-            //'item_location'             => $request->item_location,
-            'mrp'                       => 0,
-            'quantity'                  => $request->opening_quantity,
-            'unit_id'                   => $request->base_unit_id,
-            'unit_price'                => $request->at_price,
-            'discount_type'             => 'percentage',
-            'tax_id'                    => $request->tax_id,
-            'tax_type'                  => ($request->is_sale_price_with_tax) ? 'inclusive' : 'exclusive',
-            'total'                     => $request->opening_quantity * $request->at_price,
+            'item_id'        => $itemModel->id,
+            'transaction_date' => $request->transaction_date,
+            'warehouse_id'   => $request->warehouse_id,
+            'tracking_type'  => $request->tracking_type,
+            'mrp'            => 0,
+            'quantity'       => $request->opening_quantity,
+            'unit_id'        => $request->base_unit_id,
+            'unit_price'     => $request->at_price,
+            'discount_type'  => 'percentage',
+            'tax_id'         => $request->tax_id,
+            'tax_type'       => ($request->is_sale_price_with_tax) ? 'inclusive' : 'exclusive',
+            'total'          => $request->opening_quantity * $request->at_price,
         ]);
 
         return $transaction;
     }
+
+
 
     private function uploadImage($image): string
     {
@@ -824,7 +822,7 @@ class ItemController extends Controller
         $response = $this->returnRequiredFormatData($itemMaster, $showWholesalePrice);
         return response()->json($response);
     }
-function returnRequiredFormatData($itemMaster, $showWholesalePrice = false)
+    function returnRequiredFormatData($itemMaster, $showWholesalePrice = false)
     {
         $isPermiteToViewPurchasePrice = (bool) auth()->user()->can('general.allow.to.view.item.purchase.price');
 
@@ -976,20 +974,33 @@ function returnRequiredFormatData($itemMaster, $showWholesalePrice = false)
 
     public function lowStockCount(Request $request)
     {
-        $lowStockItems = Item::where('current_stock', '<=', 5)
+        $company = app('company');
+
+        if (empty($company['enable_minimum_stock_qty']) || empty($company['minimum_stock_qty'])) {
+            return response()->json([
+                'enabled' => false,
+                'count' => 0,
+                'items' => [],
+            ]);
+        }
+
+        $threshold = (int) $company['minimum_stock_qty'];
+
+        $lowStockItems = Item::where('current_stock', '<=', $threshold)
             ->select('id', 'name', 'current_stock')
             ->orderBy('current_stock', 'asc')
             ->get();
 
         return response()->json([
+            'enabled' => true,
             'count' => $lowStockItems->count(),
             'items' => $lowStockItems->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
-                    'stock' => $item->current_stock
+                    'stock' => $item->current_stock,
                 ];
-            })
+            }),
         ]);
     }
 }

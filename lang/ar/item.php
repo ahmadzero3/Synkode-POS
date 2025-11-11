@@ -130,6 +130,7 @@ return [
     'trending' => 'العناصر الرائجة',
     'only_for_stock_maintain' => 'للحفاظ على المخزون فقط',
     'conversion_rate' => 'معدل التحويل',
+    'offers'          => 'العروض',
 
     /*V1.2*/
     'wholesale_price'                   => 'سعر الجملة',
@@ -178,9 +179,12 @@ return [
     'invalid_profit_margin'                     => 'هامش الربح غير صالح',
     //Short form of expiry
     'exp'                                       => 'Exp.',
-    //2.4
+
+    'low_stock_items'                           => 'عناصر منخفضة المخزون',
     'stock_value_cost'                          => 'قيمة المخزون (التكلفة)',
     'stock_value_sale'                          => 'قيمة المخزون (البيع)',
+
+    //2.4
     'import_items_and_services'                 => 'استيراد العناصر والخدمات',
     'generate_barcode'                          => 'إنشاء رمز شريطي',
     'category.edit'                             => 'تعديل الفئة',
@@ -190,5 +194,6 @@ return [
     'brand.view'                                => 'عرض العلامة التجارية',
     'brand.delete'                              => 'حذف العلامة التجارية',
     'low_stock_items'                           => 'عناصر منخفضة المخزون',
+
 
 ];

@@ -11,6 +11,9 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
 use App\Enums\Language as LanguageEnum;
+use Illuminate\Database\QueryException;
+use InvalidArgumentException;
+
 
 class LanguageController extends Controller
 {

@@ -84,9 +84,10 @@
                                 </div>
                                 <div class="col-md-12">
                                     <x-label for="company_logo" name="{{ __('app.company_logo') }}" />
-                                    <x-browse-image src='{{ url('/company/getimage/' . $company->colored_logo) }}'
-                                        name='colored_logo' imageid='uploaded-image-1' inputBoxClass='input-box-class-1'
-                                        imageResetClass='image-reset-class-1' />
+                                    <x-browse-image src="{{ url('/company/getimage/' . $company->colored_logo) }}"
+                                        name="colored_logo" imageid="uploaded-image-1" inputBoxClass="input-box-class-1"
+                                        imageResetClass="image-reset-class-1" />
+
                                 </div>
 
                                 <div class="col-md-12">
@@ -166,12 +167,6 @@
                                     <div class="valid-feedback"></div>
                                 </div>
                                 <div class="col-md-12">
-                                    <x-label for="stock_adjustment" name="{{ __('warehouse.stock_adjustment') }}" />
-                                    <x-input type="text" name="stock_adjustment"
-                                        value="{{ $prefix->stock_adjustment }}" />
-                                    <div class="valid-feedback"></div>
-                                </div>
-                                <div class="col-md-12">
                                     <x-label for="quotation" name="{{ __('sale.quotation.quotation') }}" />
                                     <x-input type="text" name="quotation" value="{{ $prefix->quotation }}" />
                                     <div class="valid-feedback"></div>
@@ -223,6 +218,25 @@
                                         </label>
                                     </div>
                                 </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_minimum_stock_qty"
+                                            name="enable_minimum_stock_qty"
+                                            {{ $company->enable_minimum_stock_qty ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="enable_minimum_stock_qty">
+                                            {{ __('app.enable_minimum_stock_qty') }}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <x-label for="minimum_stock_qty" name="{{ __('app.minimum_stock_quantity') }}" />
+                                    <x-input type="number" name="minimum_stock_qty"
+                                        value="{{ $company->minimum_stock_qty ?? '' }}" min="0"
+                                        placeholder="{{ __('app.minimum_stock_quantity') }}" />
+                                </div>
+
 
                                 <div class="col-md-12">
                                     <div class="form-check">
@@ -297,8 +311,7 @@
                                     <div class="col-md-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox"
-                                                {{ $company->show_hsn ? 'checked' : '' }} id="show_hsn"
-                                                name="show_hsn">
+                                                {{ $company->show_hsn ? 'checked' : '' }} id="show_hsn" name="show_hsn">
                                             <label class="form-check-label" for="show_hsn">
                                                 {{ __('item.show_hsn') }}
                                             </label>
@@ -307,8 +320,7 @@
                                     <div class="col-md-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox"
-                                                {{ $company->show_sku ? 'checked' : '' }} id="show_sku"
-                                                name="show_sku">
+                                                {{ $company->show_sku ? 'checked' : '' }} id="show_sku" name="show_sku">
                                             <label class="form-check-label" for="show_sku">
                                                 {{ __('item.show_sku') }}
                                             </label>
@@ -317,8 +329,7 @@
                                     <div class="col-md-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox"
-                                                {{ $company->show_mrp ? 'checked' : '' }} id="show_mrp"
-                                                name="show_mrp">
+                                                {{ $company->show_mrp ? 'checked' : '' }} id="show_mrp" name="show_mrp">
                                             <label class="form-check-label" for="show_mrp">
                                                 {{ __('item.show_mrp') }}
                                             </label>
@@ -389,7 +400,8 @@
                                             <option value="gst" {{ $company->tax_type == 'gst' ? 'selected' : '' }}>
                                                 Enable GST</option>
                                             <option value="no-tax"
-                                                {{ $company->tax_type == 'no-tax' ? 'selected' : '' }}>No Tax</option>
+                                                {{ $company->tax_type == 'no-tax' ? 'selected' : '' }}>
+                                                No Tax</option>
                                         </select>
                                     </div>
                                 </div>
@@ -578,9 +590,10 @@
 
                                 <div class="col-md-12">
                                     <x-label for="signature" name="{{ __('app.signature') }}" />
-                                    <x-browse-image src='{{ url('/company/signature/getimage/' . $company->signature) }}'
-                                        name='signature' imageid='uploaded-image-2' inputBoxClass='input-box-class-2'
-                                        imageResetClass='image-reset-class-2' />
+                                    <x-browse-image src="{{ url('/company/signature/getimage/' . $company->signature) }}"
+                                        name="signature" imageid="uploaded-image-2" inputBoxClass="input-box-class-2"
+                                        imageResetClass="image-reset-class-2" />
+
                                 </div>
 
                                 <div class="col-md-12">
@@ -620,8 +633,8 @@
                                     <div class="col-md-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox"
-                                                {{ $company->is_enable_carrier ? 'checked' : '' }}
-                                                id="is_enable_carrier" name="is_enable_carrier">
+                                                {{ $company->is_enable_carrier ? 'checked' : '' }} id="is_enable_carrier"
+                                                name="is_enable_carrier">
                                             <label class="form-check-label" for="is_enable_carrier">
                                                 {{ __('carrier.enable_carrier') }}
                                             </label>

@@ -47,8 +47,11 @@ $(function () {
                     data: "name",
                     render: function (data, type, full, meta) {
                         const quantity = parseFloat(full.current_stock);
+                        const enabled = window.enableMinimumStockQty === true || window.enableMinimumStockQty === "true";
+                        const threshold = parseFloat(window.minimumStockQty) || 0;
+
                         const style =
-                            quantity < 5 ? "color:red; font-weight:bold" : "";
+                            enabled && quantity <= threshold ? "color:red; font-weight:bold" : "";
 
                         const nameHtml = `<span style="${style}">${data}</span>`;
 
@@ -56,12 +59,12 @@ $(function () {
                             return (
                                 nameHtml +
                                 `
-                          <br>
-                          <span class="badge text-primary bg-light-primary p-2 text-uppercase px-3"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Location">
-                            ${full.item_location}
-                            <i class="fadeIn bx bx-sm bx-location-plus"></i>
-                          </span>`
+                <br>
+                <span class="badge text-primary bg-light-primary p-2 text-uppercase px-3"
+                      data-bs-toggle="tooltip" data-bs-placement="top" title="Location">
+                  ${full.item_location}
+                  <i class="fadeIn bx bx-sm bx-location-plus"></i>
+                </span>`
                             );
                         }
 

@@ -93,14 +93,14 @@ tr.highlight {
 }
 
 /**
-* no code 
+* no code
 * */
 .text-transform-none{
 text-transform: none;
 }
 
 /**
-* input group input box, in one group i need to show some of the select or 
+* input group input box, in one group i need to show some of the select or
 * input box 30 %
 * */
 .cu-flex-30{
@@ -111,20 +111,26 @@ text-transform: none;
   width: 500px !important;
 }
 
+/* Auto width utility: use .cu-w-400-px, .cu-w-300-px, or create your own size */
+.cu-w-400-px {
+    width: 400px !important;
+}
+
+
 /**
  * POS Page Items Selected Table Resize
  * */
  .resizable-vertical {
   resize: vertical;
   overflow: auto; /* Required for the resize property to work */
-  min-height: 270px; 
+  min-height: 270px;
 }
 
 /**
  * No Padding for invoice tables
  * */
  #invoiceItemsTable input.form-control {
-    /*padding-left: 0rem;*/
+    padding-left: 0rem;
     padding-right: 0rem;
     font-size: 18px;
 }

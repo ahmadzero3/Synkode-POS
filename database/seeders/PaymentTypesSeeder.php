@@ -18,24 +18,24 @@ class PaymentTypesSeeder extends Seeder
 
         DB::table('payment_types')->insert([
             [
-                'unique_code' => 'CASH', 
-                'name' => 'Cash', 
-                'status' => 1, 
-                'created_at' => $now, 
+                'unique_code' => 'CASH',
+                'name' => 'Cash',
+                'status' => 1,
+                'created_at' => $now,
                 'updated_at' => $now,
-                'created_by' => 1, 
+                'created_by' => 1,
                 'updated_by' => 1,
-                'is_deletable' => 0,//Restricted to delete
+                'is_deletable' => 0, //Restricted to delete
             ],
             [
-                'unique_code' => 'CHEQUE', 
-                'name' => 'Cheque', 
-                'status' => 1, 
-                'created_at' => $now, 
+                'unique_code' => 'CHEQUE',
+                'name' => 'Cheque',
+                'status' => 1,
+                'created_at' => $now,
                 'updated_at' => $now,
-                'created_by' => 1, 
+                'created_by' => 1,
                 'updated_by' => 1,
-                'is_deletable' => 0,//Restricted to delete
+                'is_deletable' => 0, //Restricted to delete
             ],
 
         ]);

@@ -2,7 +2,6 @@ $(function() {
 	"use strict";
 
     const tableId = $('#datatable');
-
     const datatableForm = $("#datatableForm");
 
     /**
@@ -12,32 +11,37 @@ $(function() {
         //Delete previous data
         tableId.DataTable().destroy();
 
-        var exportColumns = [1,2,3,4,5];//Index Starts from 0
+        // Include the new Register Name column in exports
+        var exportColumns = [1,2,3,4,5,6]; // Index Starts from 0
 
         var table = tableId.DataTable({
             processing: true,
             serverSide: true,
             method:'get',
             ajax: {
-                    url: baseURL+'/transaction/cash/datatable-list',
-                    data:{
-                            party_id : $('#party_id').val(),
-                            user_id : $('#user_id').val(),
-
-                            from_date : $('input[name="from_date"]').val(),
-                            to_date : $('input[name="to_date"]').val(),
-                        },
+                url: baseURL+'/transaction/cash/datatable-list',
+                data:{
+                    party_id : $('#party_id').val(),
+                    user_id : $('#user_id').val(),
+                    from_date : $('input[name="from_date"]').val(),
+                    to_date : $('input[name="to_date"]').val(),
                 },
+            },
             columns: [
                 {targets: 0, data:'id', orderable:true, visible:false},
                 {data: 'transaction_type', name: 'transaction_type'},
                 {data: 'transaction_date', name: 'transaction_date'},
                 {data: 'party_name', name: 'party_name'},
+
+                // NEW: Register Name (server sends 'register_text')
+                {data: 'register_text', name: 'register_text'},
+
                 {
                     data: 'amount',
                     name: 'amount',
                     render: function(data, type, row) {
-                        return '<span class="text-' + row.color_class + '">' + parseFloat(data).toFixed(2) + '</span>';
+                        // data is already formatted server-side (e.g., "1,000.00")
+                        return '<span class="text-' + row.color_class + '">' + data + '</span>';
                     }
                 },
                 {data: 'note', name: 'note'},
@@ -47,12 +51,8 @@ $(function() {
 
             dom: "<'row' "+
                     "<'col-sm-12' "+
-                        "<'float-start' l"+
-                            /* card-body class - auto created here */
-                        ">"+
-                        "<'float-end' fr"+
-                            /* card-body class - auto created here */
-                        ">"+
+                        "<'float-start' l>"+
+                        "<'float-end' fr>"+
                         "<'float-end ms-2'"+
                             "<'card-body ' B >"+
                         ">"+
@@ -66,40 +66,13 @@ $(function() {
                     className: 'btn btn-outline-danger buttons-copy buttons-html5 multi_delete',
                     text: 'Delete',
                     action: function ( e, dt, node, config ) {
-                        //Confirm user then trigger submit event
                        requestDeleteRecords();
                     }
                 },
-                // Apply exportOptions only to Copy button
-                {
-                    extend: 'copyHtml5',
-                    exportOptions: {
-                        columns: exportColumns
-                    }
-                },
-                // Apply exportOptions only to Excel button
-                {
-                    extend: 'excelHtml5',
-                    exportOptions: {
-                        columns: exportColumns
-                    }
-                },
-                // Apply exportOptions only to CSV button
-                {
-                    extend: 'csvHtml5',
-                    exportOptions: {
-                        columns: exportColumns
-                    }
-                },
-                // Apply exportOptions only to PDF button
-                {
-                    extend: 'pdfHtml5',
-                    orientation: 'portrait',//or "landscape"
-                    exportOptions: {
-                        columns: exportColumns,
-                    },
-                },
-
+                { extend: 'copyHtml5',  exportOptions: { columns: exportColumns } },
+                { extend: 'excelHtml5', exportOptions: { columns: exportColumns } },
+                { extend: 'csvHtml5',   exportOptions: { columns: exportColumns } },
+                { extend: 'pdfHtml5',   orientation: 'portrait', exportOptions: { columns: exportColumns } },
             ],
 
             select: {
@@ -107,15 +80,11 @@ $(function() {
                 selector: 'td:first-child'
             },
             order: [[0, 'desc']]
-
-
         });
 
         table.on('click', '.deleteRequest', function () {
-              let deleteId = $(this).attr('data-delete-id');
-
-              deleteRequest(deleteId);
-
+            let deleteId = $(this).attr('data-delete-id');
+            deleteRequest(deleteId);
         });
 
         //Adding Space on top & bottom of the table attributes
@@ -128,19 +97,11 @@ $(function() {
         tableId.find('tbody .row-select').prop('checked', isChecked);
     });
 
-    /**
-     * @return count
-     * How many checkbox are checked
-    */
-   function countCheckedCheckbox(){
-        var checkedCount = $('input[name="record_ids[]"]:checked').length;
-        return checkedCount;
-   }
+    function countCheckedCheckbox(){
+        return $('input[name="record_ids[]"]:checked').length;
+    }
 
-   /**
-    * Validate checkbox are checked
-    */
-   async function validateCheckedCheckbox(){
+    async function validateCheckedCheckbox(){
         const confirmed = await confirmAction();//Defined in ./common/common.js
         if (!confirmed) {
             return false;
@@ -150,12 +111,9 @@ $(function() {
             return false;
         }
         return true;
-   }
-    /**
-     * Caller:
-     * Function to single delete request
-     * Call Delete Request
-    */
+    }
+
+    // Single delete request
     async function deleteRequest(id) {
         const confirmed = await confirmAction();//Defined in ./common/common.js
         if (confirmed) {
@@ -163,39 +121,29 @@ $(function() {
         }
     }
 
-    /**
-     * Create Ajax Request:
-     * Multiple Data Delete
-    */
-   async function requestDeleteRecords(){
-        //validate checkbox count
+    // Multiple delete request
+    async function requestDeleteRecords(){
         const confirmed = await confirmAction();//Defined in ./common/common.js
         if (confirmed) {
-            //Submit delete records
             datatableForm.trigger('submit');
         }
-   }
+    }
+
     datatableForm.on("submit", function(e) {
         e.preventDefault();
 
-            //Form posting Functionality
-            const form = $(this);
-            const formArray = {
-                formId: form.attr("id"),
-                csrf: form.find('input[name="_token"]').val(),
-                _method: form.find('input[name="_method"]').val(),
-                url: form.closest('form').attr('action'),
-                formObject : form,
-                formData : new FormData(document.getElementById(form.attr("id"))),
-            };
-            ajaxRequest(formArray); //Defined in ./common/common.js
-
+        const form = $(this);
+        const formArray = {
+            formId: form.attr("id"),
+            csrf: form.find('input[name="_token"]').val(),
+            _method: form.find('input[name="_method"]').val(),
+            url: form.closest('form').attr('action'),
+            formObject : form,
+            formData : new FormData(document.getElementById(form.attr("id"))),
+        };
+        ajaxRequest(formArray); //Defined in ./common/common.js
     });
 
-    /**
-     * Create AjaxRequest:
-     * Single Data Delete
-    */
     function deleteRecord(id){
         const form = datatableForm;
         const formArray = {
@@ -204,9 +152,8 @@ $(function() {
             _method: form.find('input[name="_method"]').val(),
             url: form.closest('form').attr('action'),
             formObject : form,
-            formData: new FormData() // Create a new FormData object
+            formData: new FormData()
         };
-        // Append the 'id' to the FormData object
         formArray.formData.append('record_ids[]', id);
         ajaxRequest(formArray); //Defined in ./common/common.js
     }
@@ -216,9 +163,6 @@ $(function() {
         setCashInHandValue(response.cashInHand);
     }
 
-    /**
-    * Ajax Request
-    */
     function ajaxRequest(formArray){
         var jqxhr = $.ajax({
             type: formArray._method,
@@ -227,11 +171,8 @@ $(function() {
             dataType: 'json',
             contentType: false,
             processData: false,
-            headers: {
-                'X-CSRF-TOKEN': formArray.csrf
-            },
+            headers: { 'X-CSRF-TOKEN': formArray.csrf },
             beforeSend: function() {
-                // Actions to be performed before sending the AJAX request
                 if (typeof beforeCallAjaxRequest === 'function') {
                     // Action Before Proceeding request
                 }
@@ -244,11 +185,10 @@ $(function() {
             }
         });
         jqxhr.fail(function(response) {
-                var message = response.responseJSON.message;
-                iziToast.error({title: 'Error', layout: 2, message: message});
+            var message = response.responseJSON.message;
+            iziToast.error({title: 'Error', layout: 2, message: message});
         });
         jqxhr.always(function() {
-            // Actions to be performed after the AJAX request is completed, regardless of success or failure
             if (typeof afterCallAjaxResponse === 'function') {
                 afterCallAjaxResponse(formArray.formObject);
             }
@@ -257,23 +197,17 @@ $(function() {
 
     function afterCallAjaxResponse(formObject){
         loadDatatables();
-
-
     }
 
     $(document).ready(function() {
         //Load Datatable
         loadDatatables();
 
-        /**
-         * Modal payment type, reinitiate initSelect2PaymentType() for modal
-         * Call because modal won't support ajax search input box cursor.
-         * by this code it works
-         * */
+        // Modal payment type select2 reinit (existing)
         initSelect2PaymentType({ dropdownParent: $('#invoicePaymentModal') });
-	} );
+	});
 
-    $(document).on("change", '#party_id, #user_id, input[name="from_date"], input[name="to_date"]', function function_name(e) {
+    $(document).on("change", '#party_id, #user_id, input[name="from_date"], input[name="to_date"]', function(e) {
         loadDatatables();
     });
 

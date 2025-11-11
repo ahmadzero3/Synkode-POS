@@ -21,5 +21,7 @@ return [
     'due_payment_report'        => "تقرير المدفوعات المستحقة للمورد",
     /*1.2.1*/
     'default_supplier' => 'تعيين كموفر افتراضي',
+    //2.4.1
+    'payables_minus_receivables' => 'مستحقات المورد - مستحقة الدفع'
 
 ];

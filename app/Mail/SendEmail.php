@@ -21,21 +21,14 @@ class SendEmail extends Mailable
     use Queueable, SerializesModels;
 
     protected $appSettingsRecordId;
-
+    protected $companyId;
     protected $emailAddresses;
-
     public $subject;
-
     protected $content;
-
     protected $fromEmail;
-
     protected $fromName;
-
     protected $companyLogo;
-
     protected $attachmentPath;
-
 
     /**
      * Create a new content instance.

@@ -1,357 +1,357 @@
 html.color-header .topbar .navbar-nav .nav-link {
-	color: #fff
+    color: #fff;
 }
 
 html.color-header .topbar .navbar .navbar-nav .nav-link:hover,
 html.color-header .topbar .navbar .navbar-nav .nav-link:focus {
-	background-color: rgb(255 255 255 / 12%);
-	color: #ffffff;
+    background-color: rgb(255 255 255 / 12%);
+    color: #ffffff;
 }
 
 html.color-header .search-bar input {
-	color: #413f3f;
-	background-color: #fff !important;
-	border: 1px solid rgb(241 241 241 / 15%) !important;
-	box-shadow: inset 0 1px 2px rgb(0 0 0 / 0%)
+    color: #413f3f;
+    background-color: #fff !important;
+    border: 1px solid rgb(241 241 241 / 15%) !important;
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0%);
 }
 
 html.color-header .search-bar input:focus {
-	box-shadow: 0 0 0 .25rem rgba(255, 255, 255, .25)
+    box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
 }
 
 html.color-header .search-bar input::placeholder {
-	color: #08090a !important;
-	opacity: .5 !important
+    color: #08090a !important;
+    opacity: 0.5 !important;
 }
 
 html.color-header::placeholder {
-	color: #08090a !important;
-	opacity: .5 !important
+    color: #08090a !important;
+    opacity: 0.5 !important;
 }
 
 html.color-header .search-show {
-	color: #221f1f
+    color: #221f1f;
 }
 
 html.color-header .user-info .user-name {
-	color: #fff
+    color: #fff;
 }
 
 html.color-header .user-info .designattion {
-	color: #fff
+    color: #fff;
 }
 
 html.color-header .user-box {
-	border-left: 1px solid rgb(255 255 255 / .15) !important;
-	border-right: 1px solid rgb(255 255 255 / .15) !important;
+    border-left: 1px solid rgb(255 255 255 / 0.15) !important;
+    border-right: 1px solid rgb(255 255 255 / 0.15) !important;
 }
 
-
 html.color-header .mobile-toggle-menu {
-	color: #fff
+    color: #fff;
 }
 
 .switcher-body .headercolor1 {
-	background: #0727d7 !important
+    background: #0727d7 !important;
 }
 
 .switcher-body .headercolor2 {
-	background: #23282c !important
+    background: #23282c !important;
 }
 
 .switcher-body .headercolor3 {
-	background: #e10a1f !important
+    background: #e10a1f !important;
 }
 
 .switcher-body .headercolor4 {
-	background: #157d4c !important
+    background: #157d4c !important;
 }
 
 .switcher-body .headercolor5 {
-	background: #673ab7 !important
+    background: #673ab7 !important;
 }
 
 .switcher-body .headercolor6 {
-	background: #795548 !important
+    background: #795548 !important;
 }
 
 .switcher-body .headercolor7 {
-	background: #d3094e !important
+    background: #d3094e !important;
 }
 
 .switcher-body .headercolor8 {
-	background: #ff9800 !important
+    background: #ff9800 !important;
 }
 
 html.headercolor1 .topbar {
-	background: #0727d7
+    background: #0727d7;
 }
 
 html.headercolor2 .topbar {
-	background: #23282c
+    background: #23282c;
 }
 
 html.headercolor3 .topbar {
-	background: #e10a1f
+    background: #e10a1f;
 }
 
 html.headercolor4 .topbar {
-	background: #157d4c
+    background: #157d4c;
 }
 
 html.headercolor5 .topbar {
-	background: #673ab7
+    background: #673ab7;
 }
 
 html.headercolor6 .topbar {
-	background: #795548
+    background: #795548;
 }
 
 html.headercolor7 .topbar {
-	background: #d3094e
+    background: #d3094e;
 }
 
 html.headercolor8 .topbar {
-	background: #ff9800
+    background: #ff9800;
 }
-
-
 
 /* sidebar color */
 
-
 html.color-sidebar .sidebar-wrapper {
-	background-color: #171717;
-	border-right: 1px solid rgb(228 228 228 / 0%);
+    background-color: #171717;
+    border-right: 1px solid rgb(228 228 228 / 0%);
 }
 
 html.color-sidebar .sidebar-header {
-	background-color: transparent;
-	border-right: 1px solid #e4e4e400;
-	border-bottom: 1px solid rgb(255 255 255 / 15%);
-	position: absolute;
+    background-color: transparent;
+    border-right: 1px solid #e4e4e400;
+    border-bottom: 1px solid rgb(255 255 255 / 15%);
+    position: absolute;
 }
 
 html.color-sidebar .logo-icon {
-	filter: invert(1) grayscale(100%) brightness(200%);
+    filter: invert(1) grayscale(100%) brightness(200%);
 }
 
 html.color-sidebar .menu-label {
-	color: rgb(255 255 255 / 65%);
+    color: rgb(255 255 255 / 65%);
 }
 
 html.color-sidebar .sidebar-wrapper .sidebar-header .logo-text {
-	color: #ffffff;
+    color: #ffffff;
 }
 
 html.color-sidebar .sidebar-wrapper .sidebar-header .toggle-icon {
-	color: #ffffff;
+    color: #ffffff;
 }
 
 html.color-sidebar .simplebar-scrollbar:before {
-	background: rgba(255, 255, 255, .4)
+    background: rgba(255, 255, 255, 0.4);
 }
 
-html.color-sidebar .sidebar-wrapper .metismenu .mm-active>a,
+html.color-sidebar .sidebar-wrapper .metismenu .mm-active > a,
 html.color-sidebar .sidebar-wrapper .metismenu a:active,
 html.color-sidebar .sidebar-wrapper .metismenu a:focus,
 html.color-sidebar .sidebar-wrapper .metismenu a:hover {
-	color: #fff;
-	text-decoration: none;
-	background: rgb(255 255 255 / 15%);
+    color: #fff;
+    text-decoration: none;
+    background: rgb(255 255 255 / 15%);
 }
 
 html.color-sidebar .sidebar-wrapper .metismenu a {
-	color: rgb(255 255 255 / 85%);
+    color: rgb(255 255 255 / 85%);
 }
 
 html.color-sidebar .sidebar-wrapper .metismenu ul {
-	border: 1px solid #ffffff00;
-	background: rgb(255 255 255 / 0%);
+    border: 1px solid #ffffff00;
+    background: rgb(255 255 255 / 0%);
 }
-
 
 html.color-sidebar .sidebar-wrapper {
-	background-size: 100% 100%;
-	background-attachment: fixed;
-	background-position: center;
-	background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-
 .switcher-wrapper .sidebarcolor1 {
-	background-image: url(../images/bg-themes/1.png);
+    background-image: url(../images/bg-themes/1.png);
 }
 
 .switcher-wrapper .sidebarcolor2 {
-	background-image: url(../images/bg-themes/2.png);
+    background-image: url(../images/bg-themes/2.png);
 }
 
 .switcher-wrapper .sidebarcolor3 {
-	background-image: url(../images/bg-themes/3.png);
+    background-image: url(../images/bg-themes/3.png);
 }
 
 .switcher-wrapper .sidebarcolor4 {
-	background-image: url(../images/bg-themes/4.png);
+    background-image: url(../images/bg-themes/4.png);
 }
 
 .switcher-wrapper .sidebarcolor5 {
-	background-image: url(../images/bg-themes/5.png);
+    background-image: url(../images/bg-themes/5.png);
 }
 
 .switcher-wrapper .sidebarcolor6 {
-	background-image: url(../images/bg-themes/6.png);
+    background-image: url(../images/bg-themes/6.png);
 }
 
 .switcher-wrapper .sidebarcolor7 {
-	background-image: url(../images/bg-themes/7.png);
+    background-image: url(../images/bg-themes/7.png);
 }
 
 .switcher-wrapper .sidebarcolor8 {
-	background-image: url(../images/bg-themes/8.png);
+    background-image: url(../images/bg-themes/8.png);
 }
 
-
-
-
 html.color-sidebar.sidebarcolor1 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/1.png);
+    background-image: url(../images/bg-themes/1.png);
 }
 
 html.color-sidebar.sidebarcolor2 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/2.png);
+    background-image: url(../images/bg-themes/2.png);
 }
 
 html.color-sidebar.sidebarcolor3 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/3.png);
+    background-image: url(../images/bg-themes/3.png);
 }
 
 html.color-sidebar.sidebarcolor4 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/4.png);
+    background-image: url(../images/bg-themes/4.png);
 }
 
 html.color-sidebar.sidebarcolor5 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/5.png);
+    background-image: url(../images/bg-themes/5.png);
 }
 
 html.color-sidebar.sidebarcolor6 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/6.png);
+    background-image: url(../images/bg-themes/6.png);
 }
 
 html.color-sidebar.sidebarcolor7 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/7.png);
+    background-image: url(../images/bg-themes/7.png);
 }
 
 html.color-sidebar.sidebarcolor8 .sidebar-wrapper {
-	background-image: url(../images/bg-themes/8.png);
+    background-image: url(../images/bg-themes/8.png);
 }
 
 .notification-circle {
-	width: 30px;
-	height: 30px;
-	margin-left: 6px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 50% !important;
-	border-color: white !important;
-	background: #fc4a1a;
-	background: -webkit-linear-gradient(45deg, #fc4a1a, #f7b733) !important;
-	background: linear-gradient(45deg, #fc4a1a, #f7b733) !important;
-	position: relative;
+    width: 30px;
+    height: 30px;
+    margin-left: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% !important;
+    border-color: white !important;
+    background: #fc4a1a;
+    background: -webkit-linear-gradient(45deg, #fc4a1a, #f7b733) !important;
+    background: linear-gradient(45deg, #fc4a1a, #f7b733) !important;
+    position: relative;
 }
 
 .notification-badge {
-	position: absolute;
-	top: -5px;
-	right: -5px;
-	min-width: 20px;
-	height: 20px;
-	padding: 1px;
-	background-color: red;
-	color: white;
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 12px;
-	font-weight: bold;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 20px;
+    height: 20px;
+    padding: 1px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
 }
 
 .notification-circle:hover {
-	background: #f7b733;
-	background: -webkit-linear-gradient(45deg, #f7b733, #fc4a1a) !important;
-	background: linear-gradient(45deg, #f7b733, #fc4a1a) !important;
-	transform: scale(1.1);
-	transition: transform 0.2s ease, background 0.2s ease;
+    background: #f7b733;
+    background: -webkit-linear-gradient(45deg, #f7b733, #fc4a1a) !important;
+    background: linear-gradient(45deg, #f7b733, #fc4a1a) !important;
+    transform: scale(1.1);
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .bell-icon {
-	margin-left: 5px;
-	color: white;
+    margin-left: 5px;
+    color: white;
 }
 
 .notification-dropdown {
-	top: 100% !important;
-	left: -125px !important;
-	right: auto !important;
-	margin-top: 0;
+    top: 100% !important;
+    left: -125px !important;
+    right: auto !important;
+    margin-top: 0;
 }
 
 .notification-dropdown {
-	margin-left: -52px;
-	width: 220px !important;
-	background-color: #ffffff;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-	padding: 0.25rem 0;
+    margin-left: -52px;
+    width: 220px !important;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 0.25rem 0;
 }
 
 .notification-dropdown .dropdown-item {
-	padding: 0.75rem 1rem;
-	text-align: left;
+    padding: 0.75rem 1rem;
+    text-align: left;
 }
 
-.notification-dropdown .dropdown-item+.dropdown-item {
-	border-top: 1px solid #e9ecef;
+.notification-dropdown .dropdown-item + .dropdown-item {
+    border-top: 1px solid #e9ecef;
 }
 
 .notification-dropdown .dropdown-item a {
-	display: block;
-	width: 100%;
+    display: block;
+    width: 100%;
 }
 
 .notification-dropdown .dropdown-item {
-	padding: 0.75rem 1rem;
-	border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .notification-dropdown .dropdown-item:last-child {
-	border-bottom: none;
+    border-bottom: none;
 }
 
-#low-stock-items>div {
-	padding: 0.75rem 1rem;
-	border-bottom: 1px solid #e9ecef;
+#low-stock-items > div {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
 }
 
-#low-stock-items>div:last-child {
-	border-bottom: none;
+#low-stock-items > div:last-child {
+    border-bottom: none;
 }
 
 .notification-dropdown .dropdown-item.text-end a {
-	background-color: transparent !important;
-	color: #000 !important;
-	text-align: right;
+    background-color: transparent !important;
+    color: #000 !important;
+    text-align: right;
 }
 
 .notification-dropdown .dropdown-item.text-end a:hover,
 .notification-dropdown .dropdown-item.text-end a:focus,
 .notification-dropdown .dropdown-item.text-end a:active {
-	background-color: transparent !important;
-	color: #000000 !important;
+    background-color: transparent !important;
+    color: #000000 !important;
 }
 
 .notification-dropdown .dropdown-item.text-end a[href*="item.list"] {
-	background-color: transparent !important;
-	color: #ffffff !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+.notification-dropdown .dropdown-empty {
+    padding: 0.75rem 1rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 13px;
+    font-style: italic;
+    border-bottom: 1px solid #e9ecef;
 }

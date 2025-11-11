@@ -6,8 +6,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Database\Eloquent\Relations\Relation;
+
 use App\Models\Items\Item;
 use App\Models\Party\Party;
 use App\Models\Party\PartyTransaction;
@@ -58,7 +60,6 @@ class AppServiceProvider extends ServiceProvider
                 ];
             });
 
-            // ✅ Check if the smtp_settings table exists before registering
             if (Schema::hasTable('smtp_settings')) {
                 $this->app->singleton('smtp_settings', function () {
                     $smtpSettings = CacheService::get('smtpSettings');
@@ -74,14 +75,12 @@ class AppServiceProvider extends ServiceProvider
         }
     }
 
-
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
         if (env('INSTALLATION_STATUS')) {
-            // ✅ Only try resolving smtp_settings if the table exists and the binding is registered
             if (Schema::hasTable('smtp_settings') && $this->app->bound('smtp_settings')) {
                 $smtpSettings = $this->app->make('smtp_settings');
 
@@ -133,5 +132,26 @@ class AppServiceProvider extends ServiceProvider
             'Party Payment'             =>  PartyPayment::class,
             'Quotation'                 =>  Quotation::class,
         ]);
+
+        /**
+         * Ensures that public/storage is always correctly linked.
+         */
+        try {
+            $publicStorage = public_path('storage');
+            $target = storage_path('app/public');
+
+            if (!File::exists($target)) {
+                File::makeDirectory($target, 0755, true);
+            }
+
+            if (!File::exists($publicStorage) || !is_link($publicStorage)) {
+                if (File::exists($publicStorage)) {
+                    File::deleteDirectory($publicStorage);
+                }
+                app('files')->link($target, $publicStorage);
+            }
+        } catch (\Exception $e) {
+            // Ignore any linking errors silently
+        }
     }
 }

@@ -76,7 +76,7 @@
                                         <div class="col-md-12 table-responsive">
                                             <table class="table table-bordered" id="gstr2Report">
                                                 <thead>
-                                                    <tr class="text-uppercase">
+                                                    <tr>
                                                         <th>#</th>
                                                         <th>{{ __('party.gstin') }}</th>
                                                         <th>{{ __('party.party_name') }}</th>

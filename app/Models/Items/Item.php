@@ -12,6 +12,8 @@ use App\Models\User;
 use App\Models\Unit;
 use App\Models\Items\ItemCategory;
 use App\Models\Items\ItemGeneralQuantity;
+use App\Models\Items\ItemOfferComponent;
+
 
 class Item extends Model
 {
@@ -175,4 +177,23 @@ class Item extends Model
         return $this->hasMany(ItemGeneralQuantity::class);
     }
 
+    public function offerComponents()
+    {
+        return $this->hasMany(ItemOfferComponent::class, 'offer_item_id');
+    }
+
+    public function componentItems()
+    {
+        return $this->belongsToMany(
+            Item::class,
+            'item_offer_components',
+            'offer_item_id',
+            'component_item_id'
+        )->withPivot('quantity');
+    }
+
+    public function getIsComboAttribute(): bool
+    {
+        return $this->offerComponents()->exists();
+    }
 }

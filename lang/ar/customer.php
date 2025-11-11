@@ -19,6 +19,7 @@ return [
     /*1.1.2*/
     'due_payment_report'        => "تقرير المدفوعات المستحقة للعميل",
     /*1.2.1*/
-'default_customer' => 'تعيين كعميل افتراضي',
-
+    'default_customer' => 'تعيين كعميل افتراضي',
+    //2.4.1
+    'receivables_minus_payables' => 'مستحقات العميل - المدفوعات',
 ];

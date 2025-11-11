@@ -240,64 +240,65 @@ class AppSettingsController extends Controller
             ], 500);
         }
     }
-  public function databaseBackup()
-{
-    $timestamp = now()->format('Y-m-d_H-i-s');
-    $backupDir = sys_get_temp_dir(); // ✅ Use temp folder only
+    public function databaseBackup()
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        $baseName = "databasebackup_{$timestamp}";
+        $sqlFilename = "{$baseName}.sql";
+        $backupFilename = "{$baseName}.backup";
+        $innerZipFilename = "{$baseName}_inner.zip";
+        $outerZipFilename = "{$baseName}.zip";
 
-    $sqlFile = $backupDir . "/backup_{$timestamp}.sql";
-    $customFile = $backupDir . "/backup_{$timestamp}.backup";
+        $dbHost = env('DB_HOST');
+        $dbPort = env('DB_PORT');
+        $dbName = env('DB_DATABASE');
+        $dbUser = env('DB_USERNAME');
+        $dbPassword = env('DB_PASSWORD');
 
-    // ❌ Tables to exclude from backup
-    $excludeTables = [
-        'failed_jobs',
-        'jobs',
-        'sessions',
-        'cache',
-        'telescope_entries',
-        'telescope_entries_tags',
-        'telescope_monitoring'
-    ];
+        putenv("PGPASSWORD={$dbPassword}");
+        $pgDumpPath = '"C:\\Program Files\\PostgreSQL\\17\\bin\\pg_dump.exe"';
 
-    // Build exclusion string for pg_dump
-    $excludeArgs = '';
-    foreach ($excludeTables as $table) {
-        $excludeArgs .= " --exclude-table={$table}";
-    }
+        $excludeTables = "--exclude-table=telescope_entries --exclude-table=telescope_entries_tags --exclude-table=telescope_monitoring";
 
-    // ✅ Run pg_dump for SQL
-    $commandSql = "PGPASSWORD=postgres pg_dump -h db -U postgres {$excludeArgs} laravel > \"$sqlFile\"";
+        // Create temporary folder
+        $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $baseName;
+        mkdir($tempDir, 0777, true);
 
-    // ✅ Run pg_dump for custom format (-Fc)
-    $commandCustom = "PGPASSWORD=postgres pg_dump -h db -U postgres {$excludeArgs} -Fc laravel > \"$customFile\"";
+        $sqlFilePath = $tempDir . DIRECTORY_SEPARATOR . $sqlFilename;
+        $backupFilePath = $tempDir . DIRECTORY_SEPARATOR . $backupFilename;
+        $innerZipPath = $tempDir . DIRECTORY_SEPARATOR . $innerZipFilename;
+        $outerZipPath = $tempDir . DIRECTORY_SEPARATOR . $outerZipFilename;
 
-    exec($commandSql, $outputSql, $returnCodeSql);
-    exec($commandCustom, $outputCustom, $returnCodeCustom);
+        exec("{$pgDumpPath} -h {$dbHost} -p {$dbPort} -U {$dbUser} {$excludeTables} -F p {$dbName} > \"{$sqlFilePath}\"", $out1, $sqlReturnCode);
+        exec("{$pgDumpPath} -h {$dbHost} -p {$dbPort} -U {$dbUser} {$excludeTables} -F c {$dbName} > \"{$backupFilePath}\"", $out2, $backupReturnCode);
 
-    if (
-        $returnCodeSql === 0 && file_exists($sqlFile) &&
-        $returnCodeCustom === 0 && file_exists($customFile)
-    ) {
-        // Zip both files before download
-        $zipFile = $backupDir . "/backup_{$timestamp}.zip";
-        $zip = new \ZipArchive();
-        if ($zip->open($zipFile, \ZipArchive::CREATE) === true) {
-            $zip->addFile($sqlFile, basename($sqlFile));
-            $zip->addFile($customFile, basename($customFile));
-            $zip->close();
+        if ($sqlReturnCode !== 0 || $backupReturnCode !== 0) {
+            return response()->json(['status' => false, 'message' => 'SQL dump or backup failed.'], 500);
         }
 
-        // Clean up individual files, keep only the zip for download
-        @unlink($sqlFile);
-        @unlink($customFile);
+        // Create inner zip (SQL + BACKUP)
+        $zipInner = new \ZipArchive;
+        if ($zipInner->open($innerZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            $zipInner->addFile($sqlFilePath, $sqlFilename);
+            $zipInner->addFile($backupFilePath, $backupFilename);
+            $zipInner->close();
+        } else {
+            return response()->json(['status' => false, 'message' => 'Failed to create inner zip'], 500);
+        }
 
-        // ✅ Send the zip directly, then remove it
-        return response()->download($zipFile)->deleteFileAfterSend(true);
-    } else {
-        return response()->json([
-            'status' => false,
-            'message' => 'Backup failed'
-        ], 500);
+        // Create outer zip with folder inside
+        $zipOuter = new \ZipArchive;
+        if ($zipOuter->open($outerZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            $folder = "{$baseName}/";
+            $zipOuter->addFile($sqlFilePath, $folder . $sqlFilename);
+            $zipOuter->addFile($backupFilePath, $folder . $backupFilename);
+            $zipOuter->addFile($innerZipPath, $folder . $innerZipFilename);
+            $zipOuter->close();
+        } else {
+            return response()->json(['status' => false, 'message' => 'Failed to create outer zip'], 500);
+        }
+
+        // Return final backup
+        return response()->download($outerZipPath, $outerZipFilename)->deleteFileAfterSend(true)->deleteFileAfterSend(true);
     }
-}
 }
