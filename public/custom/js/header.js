@@ -10,12 +10,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await response.json();
 
-            document.querySelectorAll(".notification-badge").forEach((badge) => {
-                if (!data.enabled) {
-                    badge.style.display = "none";
-                    return;
-                }
+            const badges = document.querySelectorAll(".notification-badge");
+            const listBox = document.querySelector("#low-stock-items");
 
+            // If elements do not exist → exit gracefully (no errors)
+            if (badges.length === 0 || !listBox) return;
+
+            // If feature disabled → hide badge + clear list + stop here
+            if (!data.enabled) {
+                badges.forEach((badge) => {
+                    badge.style.display = "none";
+                });
+
+                listBox.innerHTML = "";
+                return;
+            }
+
+            // --- Feature ENABLED logic ---
+            badges.forEach((badge) => {
                 badge.textContent = data.count;
                 badge.style.display = "flex";
                 badge.style.animation = "none";
@@ -25,30 +37,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
             let lowStockItems = "";
 
-            if (data.enabled) {
-                if (data.count > 0) {
-                    lowStockItems = data.items
-                        .slice(0, 3)
-                        .map(
-                            (item) =>
-                                `<li class="dropdown-item border-bottom">${item.name}</li>`
-                        )
-                        .join("");
-                } else {
-                    lowStockItems =
-                        `<li class="dropdown-empty">
-                            No items under required min Stock
-                        </li>`;
-                }
+            if (data.count > 0) {
+                lowStockItems = data.items
+                    .slice(0, 3)
+                    .map(
+                        (item) =>
+                            `<li class="dropdown-item border-bottom">${item.name}</li>`
+                    )
+                    .join("");
             } else {
-                lowStockItems = "";
+                lowStockItems = `
+                    <li class="dropdown-empty">
+                        No items under required min Stock
+                    </li>`;
             }
 
-            document.querySelector("#low-stock-items").innerHTML =
-                lowStockItems;
+            listBox.innerHTML = lowStockItems;
         } catch (error) {
             console.error("Error:", error);
-            document.querySelectorAll(".notification-badge").forEach((badge) => {
+
+            const badges = document.querySelectorAll(".notification-badge");
+            const listBox = document.querySelector("#low-stock-items");
+
+            // If HTML elements are missing → exit safely
+            if (badges.length === 0 || !listBox) return;
+
+            // When disabled → do NOT show "!" badge or errors
+            // Check backend settings response cache
+            try {
+                const settingsCheck = await fetch("/item/low-stock-count");
+                const s = await settingsCheck.json();
+                if (!s.enabled) {
+                    badges.forEach((badge) => (badge.style.display = "none"));
+                    listBox.innerHTML = "";
+                    return;
+                }
+            } catch (_) {
+                // If even settings cannot be read, assume disabled → hide everything
+                badges.forEach((badge) => (badge.style.display = "none"));
+                if (listBox) listBox.innerHTML = "";
+                return;
+            }
+
+            // Only show error badge if feature ENABLED
+            badges.forEach((badge) => {
                 badge.textContent = "!";
                 badge.style.display = "flex";
             });

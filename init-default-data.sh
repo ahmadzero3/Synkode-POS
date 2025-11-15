@@ -13,6 +13,14 @@ docker compose exec -T db pg_isready -U postgres -d laravel || {
 }
 echo "✅ Database connection successful"
 
+# 🧩 NEW: Ensure .env is writable before any seed/migration
+echo "🔐 Ensuring .env and storage permissions are correct..."
+docker compose exec app sh -c "
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/.env || true
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
+    chmod 664 /var/www/html/.env || true
+"
+
 docker compose exec app php artisan migrate --force
 echo "✅ Migrations done"
 
@@ -27,3 +35,11 @@ docker compose exec app php artisan db:seed --force || {
     exit 1
 }
 echo "✅ Default data seeded!"
+
+# 🧩 NEW: Final permission validation
+echo "✅ Re-checking file permissions..."
+docker compose exec app sh -c "
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/.env || true
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
+    chmod 664 /var/www/html/.env || true
+"

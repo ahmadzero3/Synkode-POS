@@ -172,7 +172,8 @@ Route::middleware(['web', 'auth', 'timed.session'])->group(function () {
     Route::post('/sale/invoice/delete', [App\Http\Controllers\Sale\SaleController::class, 'delete'])->name('sale.invoice.delete');
     Route::get('/sale/invoice/customer-display', function () {
         return view('sale.invoice.pos.customer-display');
-    })->name('sale.invoice.customer-display');;
+    })->name('sale.invoice.customer-display');
+    ;
     /**
      * Dashboard
      * */
@@ -632,6 +633,9 @@ Route::middleware(['web', 'auth', 'timed.session'])->group(function () {
         Route::get('/database-backup/download/{filename}', [DatabaseBackupController::class, 'downloadBackup'])->name('database.backup.download');
         Route::post('/database-backup/delete', [DatabaseBackupController::class, 'deleteBackup'])->name('database.backup.delete');
     });
+    Route::get('/database/backup/direct', [DatabaseBackupController::class, 'databaseBackup'])
+        ->middleware(['auth', 'permission:database.backup.view'])
+        ->name('database.backup.direct');
 
     Route::get('/database-backup/datatable-list', [DatabaseBackupController::class, 'datatableList'])->name('database.backup.datatable.list');
 

@@ -57,5 +57,11 @@
     <script src="{{ versionedAsset('assets/plugins/datatable/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ versionedAsset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ versionedAsset('custom/js/common/common.js') }}"></script>
+
+    {{-- ✅ Expose dynamic route to JS for correct URL resolution (fixes empty table) --}}
+    <script>
+        window.databaseBackupDatatableUrl = "{{ url('database-backup/datatable-list') }}";
+    </script>
+
     <script src="{{ versionedAsset('custom/js/database-backup/database-backup-list.js') }}"></script>
 @endsection

@@ -1,0 +1,6 @@
+status=active
+license=LIC-20251106-ZQC4-7O47-JJOK-171M-CUAR
+customer=Test Customer
+project=POS
+expiry=2026-11-06
+last_checked=2025-11-12 21:15:48

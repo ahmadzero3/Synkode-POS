@@ -19,6 +19,20 @@ services:
       - DB_DATABASE=laravel
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
+    # ✅ Automatically fix Laravel permissions every time container starts
+    command: >
+      sh -c '
+        echo "🔧 Fixing permissions..." &&
+        if [ -f .env ]; then
+          chown www-data:www-data .env && chmod 664 .env;
+        else
+          echo "⚠️ .env not found, skipping...";
+        fi &&
+        chown -R www-data:www-data storage bootstrap/cache &&
+        chmod -R 775 storage bootstrap/cache &&
+        echo "✅ Permissions fixed. Starting php-fpm..." &&
+        php-fpm
+      '
     depends_on:
       db:
         condition: service_healthy
@@ -78,13 +92,13 @@ services:
     volumes:
       - .:/var/www/html:delegated
     command: >
-      sh -c "
-      echo '⏳ Waiting for WSL mount...' &&
-      while [ ! -d /var/www/html ]; do
-        sleep 2;
-      done &&
-      echo '✅ WSL mount ready, continuing...'
-      "
+      sh -c '
+        echo "⏳ Waiting for WSL mount..." &&
+        while [ ! -d /var/www/html ]; do
+          sleep 2;
+        done &&
+        echo "✅ WSL mount ready, continuing..."
+      '
     restart: "no"
 
 volumes:

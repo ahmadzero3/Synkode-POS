@@ -49,11 +49,20 @@ docker compose exec app php artisan optimize
 docker compose exec app chown -R www-data:www-data storage bootstrap/cache || true
 docker compose exec app chmod -R 775 storage bootstrap/cache || true
 docker compose exec app chmod -R 775 storage/app || true
-docker compose exec app chmod -R 775 storage/app/backups ||  true
+docker compose exec app chmod -R 775 storage/app/backups || true
 
 # ✅ Ensure backups folder exists inside container
 docker compose exec app mkdir -p storage/app/backups
 docker compose exec app chown -R www-data:www-data storage/app/backups
 docker compose exec app chmod -R 775 storage/app/backups
+
+# 🧩 NEW: Fix .env permissions for license activation
+echo "🔐 Fixing .env permissions for license system..."
+docker compose exec app sh -c "
+    if [ -f /var/www/html/.env ]; then
+        chown www-data:www-data /var/www/html/.env || true
+        chmod 664 /var/www/html/.env || true
+    fi
+"
 
 echo "✅ Docker setup complete! Visit http://localhost/login"

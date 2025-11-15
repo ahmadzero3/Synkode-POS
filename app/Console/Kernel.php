@@ -15,6 +15,8 @@ class Kernel extends ConsoleKernel
         // Process scheduled backups every hour
         $schedule->command('backup:process-scheduled')->hourly();
 
+        $schedule->command('license:check')->daily();
+
         // License status check every 5 minutes
         $schedule->command('license:check')
                  ->everyFiveMinutes()

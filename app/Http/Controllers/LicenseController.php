@@ -16,23 +16,43 @@ class LicenseController extends Controller
 
     public function show()
     {
-        // First, check if license is now valid (auto-redirect if valid)
+        // ✅ Step 1: Auto-redirect if license already valid
         if ($this->isLicenseValid()) {
             return $this->redirectToAppropriatePage();
         }
 
-        // Fetch phone number from AppSettings and pass to the view
-        $settings = AppSettings::first();
+        // ✅ Step 2: Detect connectivity
+        $offlineMode = false;
+        $reconnectNeeded = false;
+
+        try {
+            $connected = @fsockopen("8.8.8.8", 53, $errno, $errstr, 2);
+            if (!$connected) {
+                $offlineMode = true; // mark as offline immediately
+                $reconnectNeeded = true;
+            } else {
+                fclose($connected);
+            }
+        } catch (\Throwable $e) {
+            $offlineMode = true;
+            $reconnectNeeded = true;
+        }
+
+        // ✅ Step 3: Fetch phone number from settings (safe default)
+        $settings = \App\Models\AppSettings::first();
         $phone_number = $settings->phone_number ?? 'N/A';
 
-        return view('license-key', compact('phone_number'));
+        // ✅ Step 4: Render license page with status flags
+        return view('license-key', compact('offlineMode', 'reconnectNeeded', 'phone_number'));
     }
+
+
 
     public function verify(Request $request)
     {
         // Clean up any existing invalid license data first
         $this->cleanupInvalidLicense();
-        
+
         $request->validate([
             'license_key' => 'required|string',
         ]);
@@ -96,10 +116,28 @@ class LicenseController extends Controller
 
         // --- Create both files ---
         $localPath = storage_path('app/license_status.txt');
-        $publicPath = 'C:\\Users\\Public\\Documents\\license_status.txt'; // PC-level file
+        $publicPath = 'C:\\Users\\Public\\Documents\\license_status.txt';
 
         $currentTime = now()->toDateTimeString();
         $licenseText = "status=active\nlicense={$licenseCode}\ncustomer={$customerName}\nproject={$projectName}\nexpiry={$expiryDate}\nlast_checked={$currentTime}\n";
+
+        // 🧠 also update encrypted cache for offline usage
+        try {
+            $fingerprint = hash('sha256', php_uname() . gethostname());
+            $encrypted = encrypt(json_encode([
+                'license_code' => $licenseCode,
+                'expiry_date' => $expiryDate,
+                'last_checked' => $currentTime,
+                'fingerprint' => $fingerprint,
+                'cache_validity_minutes' => 5,
+                'signature' => hash('sha256', $licenseCode . $fingerprint . env('APP_KEY')),
+            ]));
+            File::ensureDirectoryExists(storage_path('framework/.license_cache'));
+            File::put(storage_path('framework/.license_cache/license_status.enc'), $encrypted);
+        } catch (\Throwable $e) {
+            Log::error('Failed to save encrypted cache from LicenseController: ' . $e->getMessage());
+        }
+
 
         try {
             File::put($localPath, $licenseText);
@@ -126,10 +164,10 @@ class LicenseController extends Controller
     protected function isLicenseValid()
     {
         // Check .env for license structure
-        $envHasLicense = env('LICENSE_KEY_ACTIVATION') === 'true' && 
-                        env('LICENSE_KEY') === 'true' && 
-                        env('LICENSE_STATUS') === 'active' &&
-                        !empty(env('LICENSE_CODE'));
+        $envHasLicense = env('LICENSE_KEY_ACTIVATION') === 'true' &&
+            env('LICENSE_KEY') === 'true' &&
+            env('LICENSE_STATUS') === 'active' &&
+            !empty(env('LICENSE_CODE'));
 
         // Check files for license structure
         $fileActive = false;
@@ -137,7 +175,7 @@ class LicenseController extends Controller
             storage_path('app/license_status.txt'),
             'C:\\Users\\Public\\Documents\\license_status.txt',
         ];
-        
+
         foreach ($paths as $p) {
             if (is_file($p)) {
                 $txt = @file_get_contents($p);
@@ -170,7 +208,7 @@ class LicenseController extends Controller
             storage_path('app/license_status.txt'),
             'C:\\Users\\Public\\Documents\\license_status.txt',
         ];
-        
+
         foreach ($paths as $path) {
             if (File::exists($path)) {
                 try {
@@ -180,7 +218,7 @@ class LicenseController extends Controller
                 }
             }
         }
-        
+
         // Clear any cached license config
         Artisan::call('config:clear');
     }

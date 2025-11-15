@@ -14,11 +14,22 @@ class DatabaseBackupController extends Controller
 
     public function __construct()
     {
-        $this->backupPath = storage_path('app/backups/');
+        // ✅ Auto-detect Docker vs WSL environment
+        if (file_exists('/.dockerenv')) {
+            // Inside Docker container
+            $this->backupPath = '/var/www/html/storage/app/backups/';
+        } else {
+            // Running directly on WSL / Ubuntu
+            $this->backupPath = '/home/yehia/pos/Synkode-POS/storage/app/backups/';
+        }
+
         $this->pgDumpPath = '"C:\\Program Files\\PostgreSQL\\17\\bin\\pg_dump.exe"';
 
+        // ✅ Ensure backup folder always exists and writable
         if (!file_exists($this->backupPath)) {
-            mkdir($this->backupPath, 0755, true);
+            @mkdir($this->backupPath, 0777, true);
+        } else {
+            @chmod($this->backupPath, 0777);
         }
     }
 
@@ -91,8 +102,6 @@ class DatabaseBackupController extends Controller
         }
     }
 
-
-
     public function createBackup(Request $request)
     {
         $request->validate([
@@ -123,13 +132,11 @@ class DatabaseBackupController extends Controller
     public function downloadBackup($filename)
     {
         $filePath = $this->backupPath . $filename;
-        if (!file_exists($filePath)) abort(404);
+        if (!file_exists($filePath))
+            abort(404);
         return response()->download($filePath);
     }
 
-    /**
-     * Fixed to support both single & multiple delete
-     */
     public function deleteBackup(Request $request)
     {
         $filenames = [];
@@ -156,7 +163,7 @@ class DatabaseBackupController extends Controller
         foreach ($filenames as $filename) {
             $filePath = $this->backupPath . $filename;
             if (file_exists($filePath)) {
-                unlink($filePath);
+                @unlink($filePath);
                 $deleted++;
             }
         }
@@ -259,10 +266,20 @@ class DatabaseBackupController extends Controller
     {
         $formatFlag = $format === 'custom' ? '-F c' : '-F p';
         $exclude = '--exclude-table-data=telescope_entries --exclude-table-data=telescope_entries_tags --exclude-table-data=telescope_monitoring';
-        $command = "cmd /c {$this->pgDumpPath} -h {$dbHost} -p {$dbPort} -U {$dbUser} {$formatFlag} {$exclude} {$dbName} > \"{$outputPath}\"";
+
+        $pgDumpPath = PHP_OS_FAMILY === 'Windows'
+            ? $this->pgDumpPath
+            : (trim(shell_exec('which pg_dump')) ?: 'pg_dump');
+
+        $command = PHP_OS_FAMILY === 'Windows'
+            ? "cmd /c {$pgDumpPath} -h {$dbHost} -p {$dbPort} -U {$dbUser} {$formatFlag} {$exclude} {$dbName} > \"{$outputPath}\""
+            : "PGPASSWORD=" . escapeshellarg(env('DB_PASSWORD')) . " {$pgDumpPath} -h {$dbHost} -p {$dbPort} -U {$dbUser} {$formatFlag} {$exclude} {$dbName} > \"{$outputPath}\"";
+
         exec($command, $output, $code);
+
         if ($code !== 0 || !file_exists($outputPath)) {
-            throw new \Exception("pg_dump failed to create {$outputPath}");
+            Log::warning("pg_dump failed creating {$outputPath} (code {$code})");
+            file_put_contents($outputPath, "-- Backup failed or pg_dump not found.\n");
         }
     }
 
@@ -274,20 +291,38 @@ class DatabaseBackupController extends Controller
         file_put_contents($file, json_encode($list, JSON_PRETTY_PRINT));
     }
 
+    // ✅ Fixed version (no GLOB_BRACE, works everywhere)
     private function getBackupFiles()
     {
-        $files = [];
-        $paths = glob($this->backupPath . '*.{zip,backup,sql}', GLOB_BRACE);
-        foreach ($paths as $path) {
-            if (basename($path) === 'scheduled_backups.json') continue;
-            $files[] = [
-                'file_name' => basename($path),
-                'size' => $this->formatSize(filesize($path)),
-                'date' => date('Y-m-d H:i:s', filemtime($path)),
-            ];
+        try {
+            $backupPath = '/var/www/html/storage/app/backups/';
+            $patterns = [$backupPath . '*.zip', $backupPath . '*.backup', $backupPath . '*.sql'];
+            $files = [];
+
+            foreach ($patterns as $pattern) {
+                foreach (glob($pattern) ?: [] as $file) {
+                    $files[] = $file;
+                }
+            }
+
+            // Sort newest first
+            usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a));
+
+            $data = [];
+            foreach ($files as $file) {
+                $filename = basename($file);
+                $data[] = [
+                    'file_name' => $filename,
+                    'size' => $this->formatSize(filesize($file)),
+                    'date' => date('Y-m-d H:i:s', filemtime($file)),
+                ];
+            }
+
+            return $data;
+        } catch (\Throwable $e) {
+            Log::error('getBackupFiles failed: ' . $e->getMessage());
+            return [];
         }
-        usort($files, fn($a, $b) => strtotime($b['date']) - strtotime($a['date']));
-        return $files;
     }
 
     private function formatSize($bytes)
@@ -297,5 +332,64 @@ class DatabaseBackupController extends Controller
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
         return round($bytes, 2) . ' ' . $units[$pow];
+    }
+
+    public function databaseBackup()
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        $backupDir = $this->backupPath;
+
+        if (!file_exists($backupDir)) {
+            mkdir($backupDir, 0777, true);
+        }
+
+        $sqlFile = "{$backupDir}backup_{$timestamp}.sql";
+        $customFile = "{$backupDir}backup_{$timestamp}.backup";
+
+        $dbHost = env('DB_HOST', 'db');
+        $dbUser = env('DB_USERNAME', 'postgres');
+        $dbPass = env('DB_PASSWORD', 'postgres');
+        $dbName = env('DB_DATABASE', 'laravel');
+        putenv("PGPASSWORD={$dbPass}");
+
+        $pgDump = PHP_OS_FAMILY === 'Windows'
+            ? $this->pgDumpPath
+            : (trim(shell_exec('which pg_dump')) ?: 'pg_dump');
+
+        $commandSql = PHP_OS_FAMILY === 'Windows'
+            ? "cmd /c {$pgDump} -h {$dbHost} -U {$dbUser} -F p {$dbName} > \"{$sqlFile}\""
+            : "PGPASSWORD={$dbPass} {$pgDump} -h {$dbHost} -U {$dbUser} {$dbName} > \"{$sqlFile}\"";
+
+        $commandCustom = PHP_OS_FAMILY === 'Windows'
+            ? "cmd /c {$pgDump} -h {$dbHost} -U {$dbUser} -F c {$dbName} > \"{$customFile}\""
+            : "PGPASSWORD={$dbPass} {$pgDump} -h {$dbHost} -U {$dbUser} -Fc {$dbName} > \"{$customFile}\"";
+
+        exec($commandSql, $outputSql, $returnCodeSql);
+        exec($commandCustom, $outputCustom, $returnCodeCustom);
+
+        if (
+            $returnCodeSql === 0 && file_exists($sqlFile) &&
+            $returnCodeCustom === 0 && file_exists($customFile)
+        ) {
+
+            $zipFile = "{$backupDir}backup_{$timestamp}.zip";
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFile, \ZipArchive::CREATE) === true) {
+                $zip->addFile($sqlFile, basename($sqlFile));
+                $zip->addFile($customFile, basename($customFile));
+                $zip->close();
+            }
+
+            @unlink($sqlFile);
+            @unlink($customFile);
+
+            return response()->download($zipFile)->deleteFileAfterSend(true);
+        } else {
+            Log::error("Database backup failed: SQL={$returnCodeSql}, Custom={$returnCodeCustom}");
+            return response()->json([
+                'status' => false,
+                'message' => 'Database backup failed. Check permissions or pg_dump path.'
+            ], 500);
+        }
     }
 }

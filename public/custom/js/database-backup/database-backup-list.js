@@ -4,20 +4,28 @@ $(function () {
     const tableId = $('#datatable');
     const datatableForm = $("#datatableForm");
 
-    // ✅ Load DataTable
+    // ✅ Laravel route passed from Blade (fallback for dev)
+    const datatableUrl = window.databaseBackupDatatableUrl || '/database-backup/datatable-list';
+    const deleteUrl = window.databaseBackupDeleteUrl || '/database-backup/delete';
+    const createUrl = window.databaseBackupCreateUrl || '/database-backup/create';
+
+    // ✅ Initialize DataTable
     function loadDatatables() {
         if ($.fn.DataTable.isDataTable(tableId)) {
             tableId.DataTable().destroy();
         }
 
-        var exportColumns = [2, 3, 4];
+        const exportColumns = [2, 3, 4];
 
-        var table = tableId.DataTable({
+        const table = tableId.DataTable({
             processing: true,
             serverSide: true,
             ajax: {
-                url: '/database-backup/datatable-list',
-                type: 'GET'
+                url: datatableUrl,
+                type: 'GET',
+                error: function (xhr, error, code) {
+                    console.error("❌ DataTable AJAX error:", xhr.status, xhr.responseText);
+                }
             },
             columns: [
                 { data: 'id', orderable: true, visible: false },
@@ -25,9 +33,7 @@ $(function () {
                     data: 'id',
                     orderable: false,
                     className: 'text-center',
-                    render: function (data) {
-                        return '<input type="checkbox" class="form-check-input row-select" name="record_ids[]" value="' + data + '">';
-                    }
+                    render: data => `<input type="checkbox" class="form-check-input row-select" name="record_ids[]" value="${data}">`
                 },
                 { data: 'file_name', name: 'file_name' },
                 { data: 'size', name: 'size' },
@@ -41,13 +47,7 @@ $(function () {
             ],
 
             dom:
-                "<'row' " +
-                "<'col-sm-12' " +
-                "<'float-start'l>" +
-                "<'float-end'f>" +
-                "<'float-end ms-2'<'card-body'B>>" +
-                ">" +
-                ">" +
+                "<'row'<'col-sm-12'<'float-start'l><'float-end'f><'float-end ms-2'<'card-body'B>>>>" +
                 "<'row'<'col-sm-12'tr>>" +
                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 
@@ -55,71 +55,54 @@ $(function () {
                 {
                     className: 'btn btn-outline-danger buttons-copy buttons-html5 multi_delete',
                     text: 'Delete',
-                    action: function () {
-                        requestDeleteRecords();
-                    },
+                    action: requestDeleteRecords,
                 },
-                {
-                    extend: 'copyHtml5',
-                    exportOptions: { columns: exportColumns },
-                },
-                {
-                    extend: 'excelHtml5',
-                    exportOptions: { columns: exportColumns },
-                },
-                {
-                    extend: 'csvHtml5',
-                    exportOptions: { columns: exportColumns },
-                },
-                {
-                    extend: 'pdfHtml5',
-                    orientation: 'portrait',
-                    exportOptions: { columns: exportColumns },
-                },
+                { extend: 'copyHtml5', exportOptions: { columns: exportColumns } },
+                { extend: 'excelHtml5', exportOptions: { columns: exportColumns } },
+                { extend: 'csvHtml5', exportOptions: { columns: exportColumns } },
+                { extend: 'pdfHtml5', orientation: 'portrait', exportOptions: { columns: exportColumns } },
             ],
 
             order: [[0, 'desc']],
             pageLength: 10,
-            lengthMenu: [10, 25, 50, 100]
+            lengthMenu: [10, 25, 50, 100],
         });
 
-        // ✅ Handle delete click
-        $(document).on('click', '.deleteBackupBtn', function () {
-            let filename = $(this).data('filename');
+        // ✅ Handle single delete click
+        $(document).off('click', '.deleteBackupBtn').on('click', '.deleteBackupBtn', function () {
+            const filename = $(this).data('filename');
             deleteRequest(filename);
         });
 
-        // ✅ Wrap layout like Register
+        // ✅ Wrap layout like other tables
         $('.dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate')
             .wrap("<div class='card-body py-3'>");
 
         return table;
     }
 
-    // ✅ Header select all
+    // ✅ Select all checkboxes in header
     tableId.find('thead').on('click', '.row-select', function () {
-        var isChecked = $(this).prop('checked');
+        const isChecked = $(this).prop('checked');
         tableId.find('tbody .row-select').prop('checked', isChecked);
     });
 
-    // ✅ Count checked
     function countCheckedCheckbox() {
         return $('input[name="record_ids[]"]:checked').length;
     }
 
-    // ✅ Confirm action
     async function confirmDelete() {
         return await confirmAction("Are you sure you want to delete?");
     }
 
-    // ✅ Delete one (use POST, not DELETE)
+    // ✅ Delete single backup file
     async function deleteRequest(filename) {
         const confirmed = await confirmDelete();
         if (!confirmed) return;
 
         $.ajax({
-            url: '/database-backup/delete',
-            type: 'POST', // ✅ FIXED HERE
+            url: deleteUrl,
+            type: 'POST',
             data: {
                 filename: filename,
                 _token: $('meta[name="csrf-token"]').attr('content')
@@ -135,14 +118,13 @@ $(function () {
             },
             error: function (xhr) {
                 let message = 'Error deleting backup.';
-                if (xhr.responseJSON && xhr.responseJSON.message)
-                    message = xhr.responseJSON.message;
-                iziToast.error({ title: 'Error', layout: 2, message: message });
+                if (xhr.responseJSON?.message) message = xhr.responseJSON.message;
+                iziToast.error({ title: 'Error', layout: 2, message });
             },
         });
     }
 
-    // ✅ Multi delete
+    // ✅ Delete multiple records
     async function requestDeleteRecords() {
         const confirmed = await confirmDelete();
         if (!confirmed) return;
@@ -160,20 +142,19 @@ $(function () {
         datatableForm.trigger('submit');
     }
 
-    // ✅ Multi delete form submit (still POST)
+    // ✅ Handle multi delete submit
     datatableForm.on('submit', function (e) {
         e.preventDefault();
-        const form = $(this);
-        const formData = new FormData(form[0]);
+        const formData = new FormData(this);
 
         $.ajax({
-            type: 'POST', // ✅ FIXED HERE ALSO
-            url: form.attr('action'),
+            type: 'POST',
+            url: deleteUrl,
             data: formData,
             dataType: 'json',
             contentType: false,
             processData: false,
-            headers: { 'X-CSRF-TOKEN': form.find('input[name="_token"]').val() },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (data) {
                 iziToast.success({
                     title: 'Success',
@@ -185,25 +166,27 @@ $(function () {
             },
             error: function (response) {
                 const message = response.responseJSON?.message || 'Error deleting backups.';
-                iziToast.error({ title: 'Error', layout: 2, message: message });
+                iziToast.error({ title: 'Error', layout: 2, message });
             },
         });
     });
 
+    // ✅ Create Backup
     $('#createBackupForm').on('submit', function (e) {
         e.preventDefault();
         const form = $(this);
         const formData = new FormData(form[0]);
 
         $.ajax({
-            url: form.attr('action'),
+            url: createUrl,
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             beforeSend: function () {
-                form.find('button[type="submit"]').prop('disabled', true).html('  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Loading...');
+                form.find('button[type="submit"]').prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
             },
             success: function (response) {
                 iziToast.success({
@@ -217,11 +200,10 @@ $(function () {
             },
             error: function (xhr) {
                 let message = 'Error creating backup.';
-                if (xhr.responseJSON && xhr.responseJSON.message)
-                    message = xhr.responseJSON.message;
+                if (xhr.responseJSON?.message) message = xhr.responseJSON.message;
                 iziToast.error({
                     title: 'Error',
-                    message: message,
+                    message,
                     layout: 2,
                     position: 'topRight',
                 });
@@ -232,13 +214,13 @@ $(function () {
         });
     });
 
+    // ✅ Reset modal after closing
     $('#createDatabaseBackupModal').on('hidden.bs.modal', function () {
         $('#createBackupForm')[0].reset();
         $('#backup_type_full').prop('checked', true);
         $('#schedule_type_now').prop('checked', true);
     });
 
-    $(document).ready(function () {
-        loadDatatables();
-    });
+    // ✅ Initialize everything
+    $(document).ready(loadDatatables);
 });
